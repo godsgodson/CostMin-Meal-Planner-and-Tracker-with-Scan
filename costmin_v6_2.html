@@ -1,0 +1,3181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CostMin v6.2 — tabbed layout + persistent foods + water + resilient scan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0d0d0d;--fg:#e8e8e8;--muted:#888;--accent:#00d4aa;--card:#161616;--border:#2a2a2a;--warn:#ffb800;--err:#ff4757;
+    --font-mono:'JetBrains Mono','Fira Code','Consolas',monospace;--font-sans:'IBM Plex Sans',system-ui,sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--font-sans);background:var(--bg);color:var(--fg);line-height:1.6;min-height:100vh;}
+  .container{max-width:1100px;margin:0 auto;padding:2rem 1.5rem;}
+  header{text-align:center;margin-bottom:2.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border);}
+  h1{font-size:clamp(1.8rem,4vw,2.5rem);font-weight:700;letter-spacing:-.02em;}
+  h1 span{color:var(--accent);}
+  .subtitle{color:var(--muted);font-size:.95rem;margin-top:.5rem;}
+  .grid{display:grid;gap:1.5rem;}
+  @media(min-width:900px){.grid{grid-template-columns:1fr 1.2fr;}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;}
+  .specs-wrap{max-width:640px;}
+  .card h2{font-size:1.1rem;font-weight:600;margin-bottom:1.25rem;display:flex;align-items:center;gap:.5rem;}
+  .card h2::before{content:'';width:8px;height:8px;background:var(--accent);border-radius:2px;flex:none;}
+  .field{margin-bottom:1rem;}
+  label{display:block;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:.35rem;font-weight:500;}
+  input,select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--fg);padding:.7rem .9rem;border-radius:8px;font-family:var(--font-mono);font-size:.95rem;transition:border-color .2s,box-shadow .2s;}
+  input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,170,.15);}
+  input::placeholder{color:#555;}
+  .row{display:grid;gap:1rem;}
+  @media(min-width:500px){.row{grid-template-columns:1fr 1fr;}}
+  .row3{display:grid;gap:1rem;}
+  @media(min-width:500px){.row3{grid-template-columns:1fr 1fr 1fr;}}
+  .btn{width:100%;padding:1rem;background:var(--accent);color:#000;border:none;border-radius:8px;font-family:var(--font-sans);font-weight:600;font-size:1rem;cursor:pointer;transition:transform .1s,box-shadow .2s;}
+  .btn:hover{box-shadow:0 4px 20px rgba(0,212,170,.3);}
+  .btn:active{transform:scale(.98);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn.secondary{background:transparent;border:1px solid var(--border);color:var(--fg);padding:.6rem .9rem;width:auto;font-size:.85rem;display:inline-block;}
+  .btn.secondary:hover{border-color:var(--accent);color:var(--accent);box-shadow:none;}
+  .mini-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:5px;padding:.1rem .45rem;font-size:.7rem;cursor:pointer;font-family:var(--font-sans);vertical-align:middle;margin-left:.4rem;}
+  .mini-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .form-error{display:none;background:rgba(255,71,87,.12);border:1px solid var(--err);color:var(--err);padding:.6rem .8rem;border-radius:8px;font-size:.8rem;margin-bottom:1rem;}
+  .form-error.show{display:block;}
+  .results{display:none;}
+  .results.visible{display:block;animation:fadeIn .3s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .summary-grid{display:grid;gap:1rem;margin-bottom:1.25rem;}
+  @media(min-width:600px){.summary-grid{grid-template-columns:repeat(4,1fr);}}
+  .stat{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;}
+  .stat-value{font-family:var(--font-mono);font-size:1.35rem;font-weight:600;color:var(--accent);}
+  .stat-label{font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.25rem;}
+  .mode-ladder{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.25rem;align-items:center;}
+  .ladder-chip{background:rgba(0,212,170,.08);border:1px solid var(--border);color:var(--fg);border-radius:6px;padding:.4rem .7rem;font-family:var(--font-mono);font-size:.72rem;cursor:pointer;transition:all .2s;}
+  .ladder-chip:hover:not(:disabled){border-color:var(--accent);}
+  .ladder-chip.on{border-color:var(--accent);color:var(--accent);background:rgba(0,212,170,.14);cursor:default;}
+  .ladder-title{font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-right:.25rem;}
+  .train-box{margin-top:1.25rem;border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:1rem 1.1rem;background:var(--bg);}
+  .train-title{font-size:.75rem;font-weight:700;letter-spacing:.1em;color:var(--accent);margin-bottom:.6rem;text-transform:uppercase;font-family:var(--font-mono);}
+  .train-row{display:flex;gap:.75rem;font-size:.88rem;margin-bottom:.1rem;align-items:baseline;}
+  .train-k{font-family:var(--font-mono);color:var(--muted);min-width:70px;text-transform:uppercase;font-size:.68rem;}
+  .train-row b{font-family:var(--font-mono);color:var(--fg);}
+  .train-sub{font-size:.75rem;color:var(--muted);margin:.05rem 0 .55rem 78px;line-height:1.55;}
+  .train-notes{margin-top:.6rem;padding-top:.6rem;border-top:1px dashed var(--border);}
+  .train-notes li{font-size:.75rem;color:var(--muted);margin-left:1.1rem;margin-bottom:.3rem;line-height:1.5;}
+  .meal-plan{display:flex;flex-direction:column;gap:1rem;}
+  .meal{background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .meal-header{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.85rem 1rem;background:rgba(0,212,170,.08);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  .meal-title{font-weight:600;font-size:.9rem;}
+  .meal-time{font-family:var(--font-mono);color:var(--accent);font-size:.72rem;margin-right:.5rem;}
+  .meal-macros{display:flex;gap:1rem;font-family:var(--font-mono);font-size:.75rem;color:var(--muted);flex-wrap:wrap;}
+  .meal-body{padding:1rem;display:grid;gap:.5rem;}
+  .food-item{display:grid;grid-template-columns:1fr auto auto auto;gap:.75rem;align-items:center;padding:.5rem 0;border-bottom:1px dashed var(--border);font-size:.85rem;}
+  .food-item:last-child{border-bottom:none;}
+  .food-name{font-weight:500;}
+  .food-serving{color:var(--accent);font-family:var(--font-mono);white-space:nowrap;}
+  .food-macros{color:var(--muted);font-family:var(--font-mono);font-size:.75rem;justify-self:end;white-space:nowrap;}
+  .food-cost{color:var(--warn);font-family:var(--font-mono);font-weight:500;justify-self:end;white-space:nowrap;}
+  .swap-panel{grid-column:1/-1;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;padding:.4rem;background:rgba(0,212,170,.05);border-radius:8px;}
+  .swap-panel select{flex:1;min-width:200px;padding:.4rem .5rem;font-size:.8rem;}
+  .daily-totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(85px,1fr));gap:.75rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);}
+  .total-item{text-align:center;}
+  .total-value{font-family:var(--font-mono);font-size:1.25rem;font-weight:600;}
+  .total-label{font-size:.65rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+  .micro-box{margin-top:1.25rem;border:1px solid var(--border);border-radius:10px;padding:.9rem 1rem;background:var(--bg);}
+  .micro-title{font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.6rem;font-family:var(--font-mono);}
+  .micro-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.5rem;}
+  .micro-cell{display:flex;flex-direction:column;padding:.5rem .6rem;border:1px dashed var(--border);border-radius:8px;}
+  .micro-name{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+  .micro-val{font-family:var(--font-mono);font-size:1.05rem;font-weight:600;}
+  .micro-val em{font-style:normal;font-size:.65rem;color:var(--muted);}
+  .micro-ok{color:var(--accent);}
+  .micro-warn{color:var(--warn);}
+  .micro-bad{color:var(--err);}
+  .warn-box{margin-top:1rem;background:rgba(255,184,0,.08);border:1px solid var(--warn);border-radius:10px;padding:.8rem 1rem;font-size:.8rem;color:var(--warn);}
+  .warn-box ul{margin-left:1.2rem;}
+  .optimization-details{margin-top:1.5rem;padding:1rem;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:var(--font-mono);font-size:.75rem;color:var(--muted);line-height:1.8;}
+  .optimization-details strong{color:var(--fg);}
+  .optimization-details .highlight{color:var(--accent);}
+  .tabs{display:flex;gap:.5rem;margin-bottom:1rem;border-bottom:1px solid var(--border);padding-bottom:.5rem;flex-wrap:wrap;}
+  .tab{padding:.5rem 1rem;background:none;border:none;color:var(--muted);font-family:var(--font-sans);font-size:.85rem;font-weight:500;cursor:pointer;border-radius:6px;transition:all .2s;}
+  .tab.active{color:var(--accent);background:rgba(0,212,170,.1);}
+  .tab:hover:not(.active){color:var(--fg);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+  .log-entry{font-family:var(--font-mono);font-size:.7rem;padding:.25rem 0;border-bottom:1px dashed var(--border);display:flex;gap:.5rem;}
+  .log-time{color:#555;min-width:70px;flex:none;}
+  .log-level{flex:none;}
+  .log-level.info{color:var(--accent);}
+  .log-level.warn{color:var(--warn);}
+  .log-level.error{color:var(--err);}
+  .log-msg{color:var(--muted);word-break:break-word;}
+  .footer{margin-top:2rem;text-align:center;font-size:.75rem;color:var(--muted);}
+  .footer a{color:var(--accent);text-decoration:none;}
+  .footer a:hover{text-decoration:underline;}
+  .warn-badge{display:inline-block;background:rgba(255,184,0,.15);color:var(--warn);padding:.2rem .5rem;border-radius:4px;font-size:.7rem;font-weight:600;margin-left:.5rem;}
+  .wrap-x{overflow-x:auto;}
+  table{border-collapse:collapse;font-family:var(--font-mono);font-size:.72rem;}
+  th,td{padding:.4rem .5rem;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+  th{color:var(--muted);font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;}
+  .shop-row{display:flex;gap:1rem;justify-content:space-between;align-items:flex-start;padding:.8rem 0;border-bottom:1px dashed var(--border);flex-wrap:wrap;}
+  .shop-name{font-weight:600;font-size:.85rem;}
+  .shop-need{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-top:.15rem;}
+  .shop-links a{display:inline-block;margin-right:.6rem;font-size:.72rem;color:var(--accent);text-decoration:none;border:1px solid var(--border);border-radius:5px;padding:.15rem .5rem;}
+  .shop-links a:hover{border-color:var(--accent);}
+  .shop-price{min-width:180px;}
+  .shop-price label{font-size:.65rem;}
+  .price-input{width:110px;padding:.35rem .5rem;font-size:.8rem;}
+  .chips{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.4rem;}
+  .chip{background:rgba(0,212,170,.12);border:1px solid var(--accent);color:var(--accent);border-radius:5px;padding:.15rem .5rem;font-family:var(--font-mono);font-size:.72rem;cursor:pointer;}
+  .chip:hover{background:rgba(0,212,170,.25);}
+  .price-hint{font-size:.65rem;color:var(--muted);font-family:var(--font-mono);}
+  .note{font-size:.72rem;color:var(--muted);line-height:1.6;margin-top:.8rem;}
+  .mode-note{font-size:.72rem;color:var(--muted);line-height:1.5;margin:-.4rem 0 1rem;}
+  .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--card);border:1px solid var(--accent);color:var(--fg);border-radius:8px;padding:.7rem 1rem;font-size:.8rem;max-width:340px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:50;}
+  .toast.show{opacity:1;}
+  .shop-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center;}
+  .modal-veil{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:60;padding:1rem;}
+  .modal-veil[hidden]{display:none;}
+  .modal-card{background:var(--card);border:1px solid var(--border);border-radius:12px;max-width:580px;max-height:80vh;overflow:auto;padding:1.5rem;}
+  .modal-card pre{font-family:var(--font-mono);font-size:.72rem;white-space:pre-wrap;color:var(--muted);line-height:1.7;margin-bottom:1rem;}
+  /* ---- v4.0: Ledger (daily tracker) ---- */
+  .date-input{width:auto;padding:.5rem .6rem;font-size:.85rem;}
+  .tg-row{display:grid;grid-template-columns:90px 1fr 140px;gap:.75rem;align-items:center;margin-bottom:.55rem;}
+  .tg-name{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+  .tg-track{height:8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+  .tg-fill{height:100%;background:var(--accent);transition:width .25s;}
+  .tg-fill.warn{background:var(--warn);}
+  .tg-fill.bad{background:var(--err);}
+  .tg-val{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);text-align:right;white-space:nowrap;}
+  .ledger-add{margin-top:1rem;padding:1rem;border:1px solid var(--border);border-radius:10px;background:var(--bg);}
+  .lg-row{display:grid;grid-template-columns:1fr auto auto auto;gap:.75rem;align-items:center;padding:.6rem 0;border-bottom:1px dashed var(--border);font-size:.85rem;}
+  .lg-name em{display:block;font-style:normal;font-size:.68rem;color:var(--muted);font-family:var(--font-mono);}
+  .lg-macros{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);white-space:nowrap;}
+  .lg-cost{font-family:var(--font-mono);font-size:.75rem;color:var(--warn);white-space:nowrap;}
+  .mini-h{font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:1.25rem 0 .5rem;font-family:var(--font-mono);}
+  .mini-table{font-size:.7rem;}
+  .mini-table td,.mini-table th{padding:.3rem .5rem;}
+  .mini-table tr.on td{color:var(--accent);}
+  .lg-dayfoot{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-top:.75rem;padding-top:.6rem;border-top:1px solid var(--border);}
+  /* ---- v5.0: Scan (barcode) ---- */
+  .scan-wrap{max-width:480px;}
+  .video-wrap{position:relative;width:100%;aspect-ratio:4/3;background:#000;border-radius:10px;overflow:hidden;margin-bottom:.5rem;border:1px solid var(--border);}
+  .video-wrap.hidden{display:none;}
+  #scan-video{width:100%;height:100%;object-fit:cover;display:block;}
+  .scan-reticle{position:absolute;left:10%;right:10%;top:35%;bottom:35%;border:2px solid var(--accent);border-radius:8px;pointer-events:none;box-shadow:0 0 0 999px rgba(0,0,0,.35);}
+  .scan-result-card{margin-top:1rem;border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:1rem;background:var(--bg);}
+  .scan-result-name{font-weight:600;font-size:1rem;}
+  .scan-result-brand{color:var(--muted);font-size:.78rem;margin-top:.1rem;}
+  .scan-source-tag{display:inline-block;margin-top:.4rem;font-size:.65rem;font-weight:700;letter-spacing:.04em;padding:.15rem .5rem;border-radius:4px;background:rgba(0,212,170,.12);color:var(--accent);text-transform:uppercase;}
+  .scan-kcal{font-family:var(--font-mono);font-size:1.6rem;font-weight:600;margin-top:.6rem;}
+  .scan-kcal small{font-size:.85rem;font-weight:500;color:var(--muted);}
+  .scan-macros{font-family:var(--font-mono);font-size:.8rem;color:var(--muted);margin-top:.2rem;}
+  .scan-basis-note{font-size:.7rem;color:var(--warn);margin-top:.4rem;}
+  .mini-history{margin-top:1rem;}
+  .mini-history-item{display:flex;justify-content:space-between;padding:.35rem 0;border-bottom:1px dashed var(--border);font-size:.78rem;cursor:pointer;}
+  .mini-history-item:hover{color:var(--accent);}
+  /* ---- v6.0: persistent My Foods + water tracker ---- */
+  .search-wrap{margin-bottom:.75rem;}
+  .search-wrap input{padding:.6rem .75rem;font-size:.82rem;}
+  .water-box{margin-top:1rem;padding:1rem;border:1px solid var(--border);border-radius:10px;background:var(--bg);}
+  .water-controls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-top:.65rem;}
+  .water-controls input{width:100px;padding:.45rem .55rem;font-size:.8rem;}
+  .water-controls .btn{width:auto;padding:.45rem .65rem;font-size:.78rem;}
+  .water-quick{width:auto!important;min-width:58px;}
+  .myfood-box{margin-top:1.25rem;padding:1rem;border:1px solid var(--border);border-radius:10px;background:var(--bg);}
+  .myfood-row{display:grid;grid-template-columns:1fr auto;gap:.65rem;align-items:center;padding:.6rem 0;border-bottom:1px dashed var(--border);}
+  .myfood-row:last-child{border-bottom:none;}
+  .myfood-main{min-width:0;}
+  .myfood-name{font-weight:600;font-size:.83rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .myfood-meta{font-family:var(--font-mono);font-size:.66rem;color:var(--muted);margin-top:.1rem;line-height:1.5;}
+  .myfood-actions{display:flex;gap:.35rem;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+  .myfood-actions input{width:82px;padding:.35rem .45rem;font-size:.72rem;}
+  .myfood-actions label{display:inline-flex;align-items:center;gap:.3rem;text-transform:none;letter-spacing:0;font-size:.68rem;color:var(--muted);margin:0;}
+  .myfood-actions input[type=checkbox]{width:auto;}
+  @media(max-width:760px){
+    .myfood-row{grid-template-columns:1fr;}
+    .myfood-actions{justify-content:flex-start;}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>CostMin <span>Meal Planner</span> v6.2</h1>
+    <p class="subtitle">LP cost optimization · budget modes · micros · training Rx · daily ledger by meal · barcode scan · weight log · ft/in · lb · editable prices</p>
+  </header>
+
+  <section class="card" id="results" aria-live="polite">
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="specs" role="tab" aria-selected="true">Specs</button>
+      <button class="tab" data-tab="plan" role="tab" aria-selected="false">Plan</button>
+      <button class="tab" data-tab="log" role="tab" aria-selected="false">Ledger</button>
+      <button class="tab" data-tab="scan" role="tab" aria-selected="false">Scan</button>
+      <button class="tab" data-tab="foods" role="tab" aria-selected="false">Foods</button>
+      <button class="tab" data-tab="shop" role="tab" aria-selected="false">Shopping</button>
+      <button class="tab" data-tab="logs" role="tab" aria-selected="false">Engine Log</button>
+      <button class="tab" data-tab="sens" role="tab" aria-selected="false">Sensitivity</button>
+    </div>
+
+    <div class="tab-panel active" id="panel-specs" role="tabpanel">
+      <div class="specs-wrap">
+        <h2 id="input-heading">Your Specs</h2>
+        <div class="form-error" id="form-error" role="alert"></div>
+        <form id="spec-form" novalidate>
+          <div class="row">
+            <div class="field">
+              <label for="age">Age (years)</label>
+              <input type="number" id="age" min="18" max="100" value="35">
+            </div>
+            <div class="field">
+              <label for="sex">Sex</label>
+              <select id="sex"><option value="male">Male</option><option value="female">Female</option></select>
+            </div>
+          </div>
+          <div class="row3">
+            <div class="field">
+              <label for="height-ft">Height (ft)</label>
+              <input type="number" id="height-ft" min="3" max="8" step="1" value="6">
+            </div>
+            <div class="field">
+              <label for="height-in">Height (in)</label>
+              <input type="number" id="height-in" min="0" max="11.9" step="0.5" value="0">
+            </div>
+            <div class="field">
+              <label for="weight-lb">Current Weight (lb)</label>
+              <input type="number" id="weight-lb" min="80" max="700" step="0.5" value="200">
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="target-lb">Target Weight (lb)</label>
+              <input type="number" id="target-lb" min="80" max="700" step="0.5" value="180">
+            </div>
+            <div class="field">
+              <label for="bodyfat">Body Fat % (optional — enables Katch-McArdle)</label>
+              <input type="number" id="bodyfat" min="4" max="60" step="0.5" placeholder="e.g., 25">
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="activity">Activity Level</label>
+              <select id="activity">
+                <option value="sedentary">Sedentary (desk, little exercise)</option>
+                <option value="light">Light (1–3 days/week)</option>
+                <option value="moderate" selected>Moderate (3–5 days/week + weights)</option>
+                <option value="heavy">Heavy (6–7 days/week intense)</option>
+                <option value="athlete">Athlete (2×/day)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="goal">Primary Goal</label>
+              <select id="goal">
+                <option value="recomp" selected>Body Recomposition</option>
+                <option value="muscle">Maximize Muscle Gain</option>
+                <option value="fatloss">Maximize Fat Loss</option>
+                <option value="maintain">Maintain</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="meals">Meals Per Day</label>
+              <select id="meals">
+                <option value="1">1 Meal (OMAD)</option>
+                <option value="2">2 Meals</option>
+                <option value="3" selected>3 Meals</option>
+                <option value="4">4 Meals</option>
+                <option value="5">5 Meals</option>
+                <option value="6">6 Meals</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="protein-g">Protein g/day (blank = auto ≈2.2 g/kg lean)</label>
+              <input type="number" id="protein-g" min="60" max="350" step="5" placeholder="e.g., 190">
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="budget-mode">Budget Mode</label>
+              <select id="budget-mode">
+                <option value="cheap">Super-cheap — repetition OK</option>
+                <option value="balanced" selected>Balanced — cheap + variety</option>
+                <option value="rich">Cost no object — max quality</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="store">Price Profile / Preferred Store</label>
+              <select id="store">
+                <option value="walmart">Walmart</option>
+                <option value="kroger">Kroger</option>
+                <option value="any">No preference</option>
+              </select>
+            </div>
+          </div>
+          <div class="mode-note" id="mode-note"></div>
+          <div class="field">
+            <label for="zip">ZIP Code (optional — stores your local price edits per ZIP)</label>
+            <input type="text" id="zip" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" placeholder="e.g., 45202">
+          </div>
+          <button type="submit" class="btn" id="submit-btn">Compute Optimal Plan</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="panel-plan" role="tabpanel">
+        <div class="summary-grid" id="summary-grid"></div>
+        <div class="mode-ladder" id="mode-ladder"></div>
+        <div class="meal-plan" id="meal-plan"></div>
+        <div class="daily-totals" id="daily-totals"></div>
+        <div id="micro-holder"></div>
+        <div id="warn-box-holder"></div>
+        <div id="train-holder"></div>
+        <div class="optimization-details" id="opt-details"></div>
+      </div>
+
+      <div class="tab-panel" id="panel-log" role="tabpanel">
+        <div class="shop-actions">
+          <input type="date" id="log-date" class="date-input">
+          <button class="btn secondary" id="log-prev">- day</button>
+          <button class="btn secondary" id="log-next">+ day</button>
+          <button class="btn secondary" id="log-import">Import plan foods</button>
+          <button class="btn secondary" id="log-clear">Clear day</button>
+        </div>
+        <div id="log-bars"></div>
+
+        <div class="water-box">
+          <div class="mini-h" style="margin-top:0;">Water</div>
+          <div id="water-bar"></div>
+          <div class="water-controls">
+            <label for="water-goal" style="margin:0;">Daily goal</label>
+            <input type="number" id="water-goal" min="8" max="500" step="1" value="96" aria-label="Daily water goal in ounces">
+            <span style="font-family:var(--font-mono);font-size:.72rem;color:var(--muted);">oz</span>
+            <input type="number" id="water-input" min="1" max="200" step="1" placeholder="add oz" aria-label="Water amount in ounces">
+            <button class="btn secondary" id="water-add-btn">Log water</button>
+            <button class="btn secondary water-quick" data-water-add="8">+8</button>
+            <button class="btn secondary water-quick" data-water-add="16">+16</button>
+            <button class="btn secondary water-quick" data-water-add="24">+24</button>
+            <button class="btn secondary" id="water-clear-btn">Clear</button>
+          </div>
+          <p class="note">Water is stored separately by date, so yesterday and older days remain available after you close and restart the app.</p>
+        </div>
+
+        <div class="ledger-add">
+          <div class="row3">
+            <div class="field" style="margin-bottom:.6rem;">
+              <label for="log-food-search">Search foods &amp; My Foods</label>
+              <div class="search-wrap">
+                <input type="search" id="log-food-search" autocomplete="off" placeholder="Type chicken, tuna, yogurt, my food…">
+              </div>
+              <select id="log-add-food"></select>
+            </div>
+            <div class="field" style="margin-bottom:.6rem;">
+              <label for="log-add-serv">Servings</label>
+              <input type="number" id="log-add-serv" min="0.25" max="50" step="0.25" value="1">
+            </div>
+            <div class="field" style="margin-bottom:.6rem;">
+              <label for="log-add-meal">Meal</label>
+              <select id="log-add-meal">
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch">Lunch</option>
+                <option value="dinner">Dinner</option>
+                <option value="snacks" selected>Snacks</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn secondary" id="log-add-btn">Add food</button>
+
+          <div class="mini-h">Add a custom food (saved to My Foods for reuse)</div>
+          <div class="field">
+            <label for="log-custom-name">Food name</label>
+            <input type="text" id="log-custom-name" placeholder="e.g. Grandma's casserole">
+          </div>
+          <div class="row3">
+            <div class="field">
+              <label for="log-custom-kcal">Calories</label>
+              <input type="number" id="log-custom-kcal" placeholder="e.g. 350" min="0" max="3000">
+            </div>
+            <div class="field">
+              <label for="log-custom-p">Protein (g)</label>
+              <input type="number" id="log-custom-p" placeholder="0" min="0" max="200">
+            </div>
+            <div class="field">
+              <label for="log-custom-c">Carbs (g)</label>
+              <input type="number" id="log-custom-c" placeholder="0" min="0" max="300">
+            </div>
+          </div>
+          <div class="row3">
+            <div class="field">
+              <label for="log-custom-f">Fat (g)</label>
+              <input type="number" id="log-custom-f" placeholder="0" min="0" max="200">
+            </div>
+            <div class="field">
+              <label for="log-custom-fiber">Fiber (g)</label>
+              <input type="number" id="log-custom-fiber" placeholder="0" min="0" max="300" step="0.1" value="0">
+            </div>
+            <div class="field">
+              <label for="log-custom-na">Sodium (mg)</label>
+              <input type="number" id="log-custom-na" placeholder="0" min="0" max="5000">
+            </div>
+          </div>
+          <div class="row3">
+            <div class="field">
+              <label for="log-custom-serving">Serving size (g)</label>
+              <input type="number" id="log-custom-serving" min="1" max="5000" step="0.1" value="100">
+            </div>
+            <div class="field">
+              <label for="log-custom-price">Price per serving ($, optional)</label>
+              <input type="number" id="log-custom-price" placeholder="0.00" min="0" max="500" step="0.01" value="0">
+            </div>
+            <div class="field">
+              <label for="log-custom-diaas">DIAAS, 0–1.2 (optional)</label>
+              <input type="number" id="log-custom-diaas" placeholder="0" min="0" max="1.2" step="0.01" value="0">
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="log-custom-meal">Meal</label>
+              <select id="log-custom-meal">
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch">Lunch</option>
+                <option value="dinner">Dinner</option>
+                <option value="snacks" selected>Snacks</option>
+              </select>
+            </div>
+            <div class="field" style="display:flex;align-items:flex-end;">
+              <label style="display:flex;align-items:center;gap:.5rem;text-transform:none;letter-spacing:0;font-size:.85rem;color:var(--fg);margin-bottom:.7rem;font-weight:400;">
+                <input type="checkbox" id="log-custom-optimizer" style="width:auto;"> Also add to optimizer / price book
+              </label>
+            </div>
+          </div>
+          <button class="btn secondary" id="log-custom-btn">Save + Log</button>
+          <p class="note">Save + Log stores the food in your persistent My Foods list. Set a price and DIAAS, then check “Also add to optimizer / price book” when you want it available to the LP planner.</p>
+        </div>
+        <div id="log-entries"></div>
+        <div class="lg-dayfoot" id="log-dayfoot"></div>
+        <div class="row" style="margin-top:1.25rem;align-items:flex-start;">
+          <div>
+            <div class="mini-h">Last 7 days</div>
+            <table class="mini-table"><thead><tr><th>Day</th><th>kcal</th><th>P g</th><th>Water</th><th>Items</th></tr></thead><tbody id="log-history"></tbody></table>
+          </div>
+          <div>
+            <div class="mini-h">Weight log</div>
+            <div class="shop-actions" style="margin-bottom:.5rem;">
+              <input type="number" id="weight-input" placeholder="lb" min="80" max="700" step="0.5" class="price-input" style="width:90px;">
+              <button class="btn secondary" id="weight-add">Log</button>
+              <button class="btn secondary" id="weight-use">Use latest in specs</button>
+            </div>
+            <table class="mini-table"><tbody id="weights-list"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="panel-scan" role="tabpanel">
+        <div class="scan-wrap">
+          <div class="video-wrap hidden" id="scan-video-wrap">
+            <video id="scan-video" playsinline muted></video>
+            <div class="scan-reticle"></div>
+          </div>
+          <div class="row" style="margin-bottom:.75rem;">
+            <button class="btn secondary" id="scan-start-btn">Start camera scan</button>
+            <button class="btn secondary" id="scan-stop-btn" style="display:none;">Stop</button>
+          </div>
+          <p class="note" id="scan-status"></p>
+          <div class="row" style="align-items:flex-end;margin-top:.5rem;">
+            <div class="field" style="margin-bottom:0;">
+              <label for="scan-manual">Or type a barcode</label>
+              <input type="text" id="scan-manual" inputmode="numeric" placeholder="e.g. 0030000069043">
+            </div>
+            <button class="btn secondary" id="scan-manual-btn" style="width:auto;">Look up</button>
+          </div>
+          <div id="scan-result"></div>
+          <p class="note">Looks up against Open Food Facts (free, no setup). A local FatSecret-backed backend on <code>localhost:5000</code> is tried first when available. When this file is opened directly from <code>file://</code>, the scanner first uses a server-side reader fallback so browser CORS restrictions do not prevent access to a product that exists on Open Food Facts. Found items pre-fill the custom-food form using the product's own serving size — not a flat 100g — and are saved to My Foods for reuse.</p>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="panel-foods" role="tabpanel">
+        <div class="shop-actions">
+          <button class="btn secondary" id="reset-exclusions">Reset exclusions</button>
+          <span class="note" id="excluded-note"></span>
+        </div>
+
+        <div class="myfood-box">
+          <div class="mini-h" style="margin-top:0;">My Foods</div>
+          <p class="note" style="margin-top:0;">Persistent foods you type or scan. They remain available for Ledger searches even when they are not enabled in the optimizer.</p>
+          <div id="my-food-list"></div>
+        </div>
+
+        <div class="wrap-x">
+          <table id="food-table">
+            <thead><tr>
+              <th>Food</th><th>Cat</th><th>Srv g</th><th>kcal</th><th>P</th><th>C</th><th>F</th>
+              <th>DIAAS</th><th>Eff.P</th><th>Plan</th><th>Cost/day</th><th>$/srv</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="food-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="panel-shop" role="tabpanel">
+        <div class="shop-actions">
+          <button class="btn secondary" id="fetch-prices">Try live prices (beta)</button>
+          <button class="btn secondary" id="reset-prices">Reset price edits</button>
+        </div>
+        <div id="fetch-status" class="note"></div>
+        <div id="shop-list"></div>
+        <div id="shop-links"></div>
+        <p class="note">Prices start from national-average estimates. Browsers can't directly scrape Walmart/Kroger
+        (they block cross-site requests and bots), so: click a store link to check the item at your local store,
+        type the real price in, and it's saved for your ZIP and used to re-optimize instantly.
+        "Try live prices" attempts an automated fetch through a public reader proxy — it often gets blocked;
+        when it works you'll see clickable price candidates.</p>
+      </div>
+
+      <div class="tab-panel" id="panel-logs" role="tabpanel">
+        <div id="log-container" style="max-height:420px;overflow:auto;"></div>
+      </div>
+
+      <div class="tab-panel" id="panel-sens" role="tabpanel">
+        <div id="sensitivity-content" style="font-family:var(--font-mono);font-size:.8rem;line-height:1.8;"></div>
+      </div>
+    </section>
+
+  <footer class="footer">
+    CostMin v6.2 — two-phase simplex LP · DIAAS protein · budget modes · micronutrient guardrails · training Rx · daily ledger by meal · water log · persistent My Foods · barcode scan · weight log<br>
+    Prices &amp; nutrient values are editable/USDA-style estimates, not live scraped data. <a href="#" id="wisdom-link">View Wisdom Note</a>
+  </footer>
+</div>
+<div class="toast" id="toast"></div>
+<div class="modal-veil" id="wisdom-modal" hidden>
+  <div class="modal-card">
+    <pre id="wisdom-text"></pre>
+    <button class="btn secondary" id="wisdom-close">Close</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/@zxing/browser@latest"></script>
+<script>
+'use strict';
+/* ============================================================
+   v6.2 CHANGE LOG — TABBED LAYOUT, LABELED CUSTOM-FOOD FIELDS
+   1. "Your Specs" is now its own tab instead of a fixed sidebar
+      card next to a separate results panel. All eight sections
+      (Specs, Plan, Ledger, Scan, Foods, Shopping, Engine Log,
+      Sensitivity) share one full-width tab bar, so every section
+      gets the full page width instead of being squeezed into
+      half of a two-column layout.
+      - Specs is the default tab on load (nothing to look at in
+        Plan until specs exist).
+      - Pressing "Compute Optimal Plan" jumps straight to the
+        Plan tab so results are immediately visible; the silent
+        auto-compute on first page load does NOT jump tabs, so a
+        first-time visitor still lands on Specs, not a plan built
+        from placeholder defaults.
+   2. The custom-food entry form (name/kcal/P/C/F/fiber/sodium/
+      serving size/price/DIAAS/meal) was a single dense row of
+      unlabeled, undersized inputs relying on placeholder text
+      alone. Every field now has a real, persistent <label> and
+      full-size input, laid out the same way as the Specs form,
+      across clearly grouped rows. No field IDs changed, so all
+      existing behavior (My Foods save, optimizer opt-in) is
+      identical -- this is a layout fix, not a logic change.
+   ============================================================ */
+/* ============================================================
+   v5.0 CHANGE LOG — FOOD DB WIDENED, LEDGER BY MEAL, BARCODE SCAN
+   1. Food database roughly 3.5x'd: 47 → 163 items across all 14
+      existing categories (meat, fish, egg, dairy, supplement,
+      legume, soy, nut, seed, grain, tuber, oil, veg, fruit).
+      Same 17-field schema throughout; nothing renamed or
+      restructured, so every existing price edit, exclusion and
+      pin carries over untouched.
+   2. Ledger entries now belong to a meal (Breakfast/Lunch/Dinner/
+      Snacks), matching the Plan tab's structure instead of one
+      flat list:
+      - Quick-add and custom-add both take a meal selector.
+      - "Import plan foods" assigns each food to the ledger
+        bucket matching where the optimizer actually put it
+        (Brunch/Snack/Evening snack/OMAD all fold into Snacks).
+      - Old entries with no meal field default to Snacks at
+        render time — no migration needed, nothing rewritten.
+   3. New "Scan" tab: camera barcode scan (or manual entry) looks
+      up real nutrition data.
+      - Tries a companion local backend at localhost:5000 first
+        (the barcode-scanner project — gives FatSecret results
+        when it's configured and running), then falls back to a
+        direct, keyless Open Food Facts lookup.
+      - Uses the product's OWN serving size, not a flat 100g:
+        prefers Open Food Facts' precomputed per-serving values,
+        else scales its per-100g data by serving_quantity, and
+        only falls back to 100g when a product truly has no
+        serving size on file. Same resolution order as the
+        Python backend, so results match whichever path is used.
+      - One tap logs the result straight to today's ledger via
+        the same addLedgerEntry() path as a hand-typed custom
+        food — no separate code path to keep in sync.
+   4. Self-test suite extended further (see the "v5.0" block).
+   ============================================================ */
+
+/* ============================================================
+   v6.0 CHANGE LOG — PERSISTENT FOODS + WATER + RESILIENT SCAN
+   1. My Foods persists in localStorage:
+      - every hand-entered custom food is saved and reusable.
+      - every successful barcode result is saved and reusable.
+      - foods can be enabled/disabled in the optimizer.
+      - optimizer-enabled My Foods are added to the same FOODS array
+        so they participate in LP optimization and Shopping/Prices.
+   2. Ledger food picker now has a live text search.
+   3. Water is logged separately by local date in costmin.water,
+      with an editable daily goal and quick-add buttons.
+   4. Open Food Facts lookup now tries .json endpoints, multiple
+      regional hosts, barcode normalization, legacy v0 fallback,
+      and CORS-reader fallbacks before declaring a network failure.
+   ============================================================ */
+/* ============================================================
+   v4.0 CHANGE LOG — LEDGER (daily tracker) MERGED IN
+   1. New "Ledger" tab: log what you actually ate against the
+      plan the optimizer gave you.
+      - Import plan foods in one click (skips already-logged);
+        servings snapshot at import so later edits don't
+        rewrite history.
+      - Quick-add any price-book food (macros + cost per
+        serving snapshot at add time) or a custom food with
+        its own kcal/P/C/F/sodium.
+      - +/- 0.25-serving steppers on every entry; del button.
+      - Target bars: calories, protein (vs plan actual), carbs,
+        fat, sodium vs the 2,300mg cap. Over = red, under = warn.
+      - Day navigation, 7-day history table, per-day food cost.
+      - Weight log with deltas + "Use latest in specs" so the
+        plan recalculates as your weight changes.
+   2. Persistence: costmin.log (date → entries) and
+      costmin.weights (date → lb) in localStorage. Entries store
+      per-serving snapshots — price edits never mutate history.
+   3. Engine-log tab renamed "Engine Log" to avoid confusion
+      with the Ledger tab.
+   4. Self-test suite extended to 37 checks (ledger math,
+      local-date key, totals edge cases).
+   Carries forward all v3.1 fixes (micros, concat-style
+   sensitivity render, groupOf test fix).
+   ============================================================ */
+
+/* ---------- helpers ---------- */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt$=v=>'$'+(v<0?'-':'')+Math.abs(v).toFixed(2);
+const LB_PER_KG=2.2046226218;
+const U={
+  lbsToKg:lb=>lb/LB_PER_KG,
+  kgToLbs:kg=>kg*LB_PER_KG,
+  ftInToCm:(ft,inch)=>(ft*12+inch)*2.54,
+  gToOz:g=>g/28.3495,
+  cmToFtIn:cm=>{const t=Math.round(cm/2.54);return{ft:Math.floor(t/12),in:t%12};}
+};
+let toastTimer=null;
+function toast(msg){
+  const t=$('toast');if(!t)return;
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+/* ---------- logging ---------- */
+const LogLevel={DEBUG:0,INFO:1,WARN:2,ERROR:3};
+const LEVELS=['DEBUG','INFO','WARN','ERROR'];
+const logs=[];
+function log(level,msg,data){
+  const time=new Date().toISOString().slice(11,23);
+  logs.push({time,level,msg});
+  const el=$('log-container');
+  if(el){
+    const d=document.createElement('div');d.className='log-entry';
+    const s1=document.createElement('span');s1.className='log-time';s1.textContent=time;
+    const s2=document.createElement('span');s2.className='log-level '+LEVELS[level].toLowerCase();s2.textContent=LEVELS[level];
+    const s3=document.createElement('span');s3.className='log-msg';
+    s3.textContent=msg+(data!==undefined&&data!==null?' '+JSON.stringify(data):'');
+    d.append(s1,s2,s3);el.appendChild(d);el.scrollTop=el.scrollHeight;
+  }
+}
+
+/* ---------- metabolic engine ---------- */
+const MetabolicEngine={
+  ACTIVITY_MULT:{sedentary:1.2,light:1.375,moderate:1.55,heavy:1.725,athlete:1.9},
+  bmrMifflin(w,h,a,s){return 10*w+6.25*h-5*a+(s==='male'?5:-161);},
+  bmrKatch(lbm){return 370+21.6*lbm;},
+  pRatio(bfPct){const bf=bfPct/100;return 1/(1+Math.exp(1.55*(bf-0.15)));},
+  estimateBodyFat(bmi,age,sex){
+    const d=sex==='male'?1.20*bmi+0.23*age-16.2:1.20*bmi+0.23*age-5.4;
+    return Math.min(60,Math.max(5,d));
+  },
+  computeTargets(s){
+    const {age,sex,heightCm,weightKg,bodyfat,activity,goal}=s;
+    const hasBF=bodyfat!=null&&bodyfat>0;
+    const bmi=weightKg/Math.pow(heightCm/100,2);
+    const bfPct=hasBF?bodyfat:this.estimateBodyFat(bmi,age,sex);
+    const lbm=weightKg*(1-bfPct/100);
+    const bmr=hasBF?this.bmrKatch(lbm):this.bmrMifflin(weightKg,heightCm,age,sex);
+    const tdee=Math.round(bmr*this.ACTIVITY_MULT[activity]);
+    const pRatio=this.pRatio(bfPct);
+    log(LogLevel.INFO,'Metabolic calc',{bmr:Math.round(bmr),tdee,lbmLb:Math.round(U.kgToLbs(lbm)),bfPct:+bfPct.toFixed(1),pRatio:+pRatio.toFixed(3)});
+    const proteinOverride=(s.proteinG!=null&&s.proteinG>=60&&s.proteinG<=350)?Math.round(s.proteinG):null;
+    const proteinTarget=Math.round(proteinOverride||2.2*lbm);
+    if(proteinOverride)log(LogLevel.INFO,'Protein override applied',{g:proteinOverride});
+    const micro={
+      sodiumMax:2300,
+      caMin:(sex==='female'&&age>=51)?1200:1000,
+      feMin:(sex==='female'&&age<51)?18:8,
+      vcMin:sex==='female'?75:90,
+      kMin:sex==='female'?2600:3400,
+      b12Min:2.4
+    };
+    log(LogLevel.INFO,'Micro targets',micro);
+    const fatTarget=Math.round(0.8*weightKg);
+    let calorieTarget=tdee,goalDesc='';
+    switch(goal){
+      case 'recomp':{
+        const wfLoss=weightKg*0.003,wmGain=lbm*0.0015;
+        calorieTarget=Math.round(tdee-(wfLoss*7700-wmGain*1800)/7);
+        goalDesc=`Recomp: ~${U.kgToLbs(wfLoss).toFixed(2)} lb fat loss + ${U.kgToLbs(wmGain).toFixed(2)} lb muscle per week`;
+        break;}
+      case 'muscle':{
+        const surplus=bfPct<15?400:300;
+        calorieTarget=tdee+surplus;
+        goalDesc=`Muscle gain: +${surplus} kcal/day`;
+        break;}
+      case 'fatloss':{
+        const deficit=Math.min(750,tdee*0.25);
+        calorieTarget=Math.round(tdee-deficit);
+        goalDesc=`Fat loss: −${Math.round(deficit)} kcal/day`;
+        break;}
+      default:goalDesc='Maintenance';
+    }
+    calorieTarget=Math.max(1000,calorieTarget);
+    const pKcal=proteinTarget*4,fKcal=fatTarget*9;
+    let carbTarget=Math.max(0,Math.round((calorieTarget-pKcal-fKcal)/4)),adjFat=fatTarget;
+    if(carbTarget<100){adjFat=Math.round((fKcal+(100-carbTarget)*4)/9);carbTarget=100;}
+    log(LogLevel.INFO,'Targets',{kcal:calorieTarget,protein:proteinTarget,fat:adjFat,carb:carbTarget});
+    return {bmr:Math.round(bmr),tdee,lbmKg:lbm,bodyFatPct:bfPct,pRatio,micro,
+      calorieTarget,proteinTarget,fatTarget:adjFat,carbTarget,goalDesc,
+      meals:s.meals,heightCm,weightKg};
+  }
+};
+
+/* ---------- food database ---------- */
+const FOOD_DATABASE=[
+  ['Chicken Breast (frozen, 4lb bag)',100,165,31,0,3.6,0,0.62,0.92,'Walmart','meat',200,10,0.5,0,300,0.3],
+  ['Chicken Thighs (bone-in, 5lb)',100,209,26,0,10.9,0,0.48,0.92,'Walmart','meat',90,10,1.0,0,230,0.4],
+  ['Ground Beef 93/7 (3lb)',100,176,29,0,6.5,0,0.89,0.92,'Walmart','meat',70,15,2.1,0,330,2.4],
+  ['Pork Loin (boneless)',100,143,26,0,3.5,0,0.68,0.92,'Kroger','meat',55,15,0.7,0,390,0.6],
+  ['Vienna Sausages (canned, 4.6oz)',56,157,7,1.4,14.2,0,0.34,0.85,'Walmart','meat',620,10,0.5,0,90,0.7],
+  ['Canned Tuna (water, 12oz 4pk)',85,99,22,0,0.7,0,0.58,0.90,'Walmart','fish',300,10,1.1,0,250,2.5],
+  ['Canned Sardines (oil, 4.4oz 3pk)',85,191,23,0,10.5,0,0.83,0.94,'Kroger','fish',430,325,2.4,0,340,7.5],
+  ['Canned Mackerel (15oz)',100,201,19,0,13.9,0,0.55,0.94,'Walmart','fish',400,200,1.0,0,340,6.0],
+  ['Canned Pink Salmon (14.75oz)',100,152,24,0,5.5,0,1.19,0.90,'Kroger','fish',400,240,0.7,0,330,4.5],
+  ['Eggs (large, 18ct)',50,72,6.3,0.4,4.8,0,0.18,1.13,'Walmart','egg',70,28,0.9,0,69,0.45],
+  ['Liquid Egg Whites (32oz)',100,52,11,0.7,0.2,0,0.38,1.09,'Kroger','egg',170,7,0.1,0,160,0.1],
+  ['Greek Yogurt 0% (32oz)',170,100,20,6,0,0,0.65,1.09,'Walmart','dairy',65,190,0.2,0,230,1.0],
+  ['Cottage Cheese 2% (24oz)',113,90,13,3,2.5,0,0.48,1.09,'Kroger','dairy',350,100,0.3,0,100,0.7],
+  ['Whole Milk (gallon)',244,150,8,12,8,0,0.21,1.14,'Walmart','dairy',105,276,0.1,0,349,1.1],
+  ['Whey Isolate (5lb)',30,120,27,1,0.5,0,0.85,1.09,'Walmart','supplement',60,100,0.3,0,180,0.5],
+  ['Dry Lentils (1lb)',100,116,9,20,0.4,7.9,0.12,0.52,'Walmart','legume',2,19,3.3,1,300,0],
+  ['Dry Black Beans (1lb)',100,132,8.9,23.7,0.5,8.7,0.14,0.53,'Kroger','legume',1,27,2.1,0,320,0],
+  ['Dry Chickpeas (1lb)',100,164,8.9,27.4,2.6,7.6,0.15,0.58,'Walmart','legume',5,45,1.2,1,270,0],
+  ['Dry Split Peas (1lb)',100,118,8.3,21.1,0.4,8.3,0.13,0.51,'Kroger','legume',2,14,1.2,0,240,0],
+  ['Tofu Firm (14oz)',100,76,8,1.9,4.8,0.3,0.42,0.90,'Walmart','soy',15,300,2.0,0,140,0],
+  ['Tempeh (8oz)',100,192,19,9,11,0,0.75,0.91,'Kroger','soy',10,110,2.3,0,190,0],
+  ['Textured Veg Protein (10oz)',25,80,12,9,0,4,0.28,0.85,'Walmart','soy',5,35,1.3,0,400,0],
+  ['Peanut Butter (40oz)',32,188,8,6,16,2,0.18,0.46,'Walmart','nut',140,15,0.6,0,200,0],
+  ['Peanuts Dry Roasted (16oz)',28,161,7,4.6,14,2.4,0.11,0.46,'Kroger','nut',120,15,1.2,0,180,0],
+  ['Sunflower Seeds (12oz)',28,165,5.5,6,14,3,0.14,0.48,'Walmart','seed',100,20,1.4,0,180,0],
+  ['White Rice (20lb)',100,130,2.7,28,0.3,0.4,0.04,0.47,'Walmart','grain',1,10,1.0,0,35,0],
+  ['Brown Rice (5lb)',100,112,2.6,23,0.9,1.8,0.06,0.50,'Kroger','grain',2,10,0.5,0,86,0],
+  ['Oats Rolled (42oz)',40,150,5,27,3,4,0.11,0.57,'Walmart','grain',2,20,1.8,0,140,0],
+  ['Pasta (16oz)',56,200,7,42,1.1,2.5,0.12,0.42,'Walmart','grain',1,8,1.8,0,65,0],
+  ['Bread Whole Wheat (20oz)',28,70,4,12,1,2,0.09,0.42,'Kroger','grain',130,40,0.9,0,70,0],
+  ['Tortillas Flour (10ct)',45,140,4,24,3,1,0.15,0.42,'Walmart','grain',220,60,0.6,0,55,0],
+  ['Potatoes Russet (10lb)',100,77,2,17,0.1,2.2,0.05,0.55,'Walmart','tuber',5,12,0.8,12,480,0],
+  ['Sweet Potatoes (3lb)',100,86,1.6,20,0.1,3,0.08,0.55,'Kroger','tuber',40,35,0.6,18,450,0],
+  ['Canola Oil (48oz)',14,124,0,0,14,0,0.08,0,'Kroger','oil',0,0,0,0,0,0],
+  ['Olive Oil (51oz)',14,119,0,0,13.5,0,0.18,0,'Walmart','oil',0,0,0,0,0,0],
+  ['Butter (1lb)',14,102,0.1,0,11.5,0,0.14,0,'Walmart','dairy',100,3,0,0,0,0.1],
+  ['Bananas (per lb, ~3 medium)',118,105,1.3,27,0.4,3.1,0.25,0,'Walmart','fruit',1,6,0.3,10,420,0],
+  ['Apples (each, ~180g)',180,95,0.5,25,0.3,4.4,0.60,0,'Kroger','fruit',0,11,0.3,8,190,0],
+  ['Oranges (each, ~140g)',140,70,1.3,18,0.2,3.4,0.60,0,'Kroger','fruit',0,55,0.2,75,240,0],
+  ['Frozen Mixed Berries (12oz)',140,80,1,19,0.5,4,1.10,0,'Walmart','fruit',0,15,0.7,20,130,0],
+  ['Avocado (each)',150,240,3,12.8,22,10,0.65,0,'Kroger','fruit',5,15,0.8,15,700,0],
+  ['Frozen Broccoli (12oz)',85,34,2.8,6.6,0.4,2.6,0.18,0,'Walmart','veg',20,35,0.7,35,230,0],
+  ['Frozen Spinach (16oz)',85,23,3,3.6,0.4,2.2,0.15,0,'Kroger','veg',40,90,1.6,8,400,0],
+  ['Frozen Mixed Veg (12oz)',85,60,3,12,0.2,4,0.16,0,'Walmart','veg',25,25,0.6,8,160,0],
+  ['Carrots (2lb)',100,41,0.9,9.6,0.2,2.8,0.05,0,'Kroger','veg',65,33,0.3,6,320,0],
+  ['Cabbage (head)',100,25,1.3,5.8,0.1,2.5,0.03,0,'Walmart','veg',18,40,0.5,36,170,0],
+  ['Onions (3lb)',100,40,1.1,9.3,0.1,1.7,0.04,0,'Walmart','veg',4,23,0.2,7,150,0],
+  ['Ground Turkey 93/7 (2.5lb)',100,150,20,0,7,0,0.75,0.92,'Walmart','meat',65,10,1.2,0,230,0.3],
+  ['Turkey Breast, Whole Boneless',100,135,30,0,1,0,0.7,0.92,'Kroger','meat',55,10,1.1,0,250,0.3],
+  ['Beef Chuck Roast (boneless)',100,215,26,0,12,0,1.05,0.92,'Walmart','meat',65,14,2.2,0,310,2.3],
+  ['Lean Ground Beef 96/4 (1lb)',100,155,26,0,5,0,1.1,0.92,'Kroger','meat',68,14,2.1,0,335,2.3],
+  ['Pork Shoulder (bone-in)',100,250,22,0,18,0,0.6,0.9,'Walmart','meat',60,16,0.9,0,340,0.6],
+  ['Bacon (16oz)',100,541,37,1.4,42,0,0.95,0.85,'Walmart','meat',1717,15,1.3,0,565,0.9],
+  ['Deli Turkey Slices (16oz)',100,104,17,3,2.5,0,0.85,0.85,'Kroger','meat',1050,10,0.9,0,330,0.3],
+  ['Ham, Deli Sliced (16oz)',100,107,17,1.5,3.5,0,0.9,0.85,'Walmart','meat',1200,7,0.7,0,290,0.5],
+  ['Ground Lamb (1lb)',100,282,25,0,20,0,1.6,0.92,'Kroger','meat',65,17,1.9,0,290,2.6],
+  ['Beef Liver',100,175,26,3.9,4.9,0,0.55,0.9,'Walmart','meat',70,11,6.5,1.9,380,70],
+  ['Chicken Drumsticks (5lb)',100,172,28,0,6,0,0.55,0.92,'Walmart','meat',90,12,1.1,0,240,0.4],
+  ['Turkey Bacon (12oz)',100,150,17,1,9,0,1.1,0.85,'Kroger','meat',1000,10,0.8,0,240,0.4],
+  ['Fresh Salmon Fillet',100,208,20,0,13,0,1.65,0.9,'Kroger','fish',60,9,0.5,0,380,4.8],
+  ['Tilapia Fillet (frozen, 2lb)',100,96,20.1,0,1.7,0,0.75,0.9,'Walmart','fish',52,10,0.6,0,380,1.9],
+  ['Cod Fillet (frozen)',100,82,18,0,0.7,0,0.95,0.9,'Kroger','fish',54,16,0.4,0,413,0.9],
+  ['Frozen Shrimp (2lb bag)',100,99,24,0.2,0.3,0,1.1,0.9,'Walmart','fish',111,70,0.5,0,259,1.4],
+  ['Canned Tuna in Oil (12oz)',100,198,25,0,10,0,0.65,0.9,'Kroger','fish',350,10,1.4,0,240,2.2],
+  ['Catfish Fillet (frozen)',100,105,18,0,3,0,0.85,0.85,'Walmart','fish',50,8,0.7,0,330,1.5],
+  ['Canned Crab Meat',100,83,18,0,0.7,0,2.3,0.85,'Kroger','fish',330,57,0.6,0,184,9.8],
+  ['Hard-Boiled Eggs (prepacked, 6ct)',100,155,13,1.1,11,0,0.4,1.13,'Walmart','egg',124,50,1.2,0,126,0.9],
+  ['2% Milk (gallon)',100,50,3.4,4.9,2,0,0.19,1.14,'Walmart','dairy',44,113,0,0,150,0.5],
+  ['Skim Milk (gallon)',100,34,3.4,5,0.1,0,0.18,1.14,'Kroger','dairy',42,122,0,0,150,0.5],
+  ['String Cheese (12ct)',100,280,24,3,20,0,0.75,1.09,'Walmart','dairy',560,690,0.2,0,90,0.8],
+  ['Cheddar Cheese Block (2lb)',100,403,25,1.3,33,0,0.55,1.09,'Kroger','dairy',621,721,0.2,0,98,0.8],
+  ['Mozzarella Shredded (2lb)',100,280,28,3,17,0,0.5,1.09,'Walmart','dairy',580,730,0.2,0,95,0.8],
+  ['Parmesan, Grated (8oz)',100,431,38,4,29,0,0.95,1.09,'Kroger','dairy',1529,1184,0.8,0,125,1.2],
+  ['Plain Kefir (32oz)',100,41,3.3,4.8,1,0,0.28,1.09,'Walmart','dairy',40,120,0,0,140,0.4],
+  ['Cream Cheese (8oz)',100,342,6,4,34,0,0.55,1.05,'Kroger','dairy',320,100,0.3,0,130,0.3],
+  ['Ricotta Cheese (15oz)',100,174,11,3,13,0,0.5,1.05,'Walmart','dairy',84,207,0.4,0,105,0.4],
+  ['Casein Protein (4lb)',30,110,24,3,0.5,0,0.9,1.09,'Walmart','supplement',60,100,0.3,0,180,0.5],
+  ['Mass Gainer (5lb)',100,400,25,60,5,0,0.7,0.95,'Kroger','supplement',180,300,2,0,300,1],
+  ['Collagen Peptides (1lb)',20,70,18,0,0,0,0.6,0.05,'Walmart','supplement',50,0,0,0,0,0],
+  ['Pea Protein Powder (2lb)',30,120,24,2,2,0,0.65,0.82,'Kroger','supplement',190,20,3,0,200,0],
+  ['Dry Kidney Beans (1lb)',100,127,8.7,22.8,0.5,6.4,0.16,0.55,'Walmart','legume',2,28,2.9,1,330,0],
+  ['Dry Pinto Beans (1lb)',100,143,9,26.2,0.6,7.5,0.15,0.55,'Kroger','legume',1,35,2.1,1,350,0],
+  ['Dry Navy Beans (1lb)',100,140,8.2,26.1,0.6,7.4,0.16,0.55,'Walmart','legume',2,40,2.3,1,360,0],
+  ['Canned Black Beans, Low Sodium (15oz)',100,91,6.1,16.6,0.5,5.4,0.22,0.53,'Kroger','legume',10,27,1.1,0,240,0],
+  ['Canned Refried Beans (16oz)',100,93,5.4,15.4,1.2,5.5,0.2,0.53,'Walmart','legume',380,40,1,0,270,0],
+  ['Dry Lima Beans (1lb)',100,115,7.8,20.9,0.4,7,0.2,0.5,'Kroger','legume',2,17,2.2,0,370,0],
+  ['Soy Milk, Unsweetened (64oz)',100,33,3.3,1.7,1.8,0.6,0.1,0.9,'Walmart','soy',45,120,0.4,0,140,0.3],
+  ['Silken Tofu (12oz)',100,55,5.5,2,2.5,0.3,0.35,0.88,'Kroger','soy',7,90,1,0,80,0],
+  ['Soy Protein Isolate Powder',30,110,25,1,0.5,0,0.75,0.9,'Walmart','soy',180,50,3.5,0,90,0],
+  ['Edamame, Shelled (frozen, 16oz)',100,122,11,10,5,5,0.45,0.83,'Kroger','soy',6,63,2.3,7,436,0],
+  ['Almonds, Raw (2lb)',100,579,21,22,50,12.5,0.85,0.46,'Walmart','nut',1,269,3.7,0,733,0],
+  ['Cashews, Raw (2lb)',100,553,18,30,44,3.3,0.95,0.45,'Kroger','nut',16,37,6.7,0,660,0],
+  ['Walnuts, Halves (16oz)',100,654,15,14,65,6.7,1.1,0.42,'Walmart','nut',2,98,2.9,1,441,0],
+  ['Pistachios, Roasted (16oz)',100,562,20,28,45,10,1.3,0.47,'Kroger','nut',428,105,3.9,0,1025,0],
+  ['Mixed Nuts, Roasted (26oz)',100,607,20,21,54,8,1.05,0.44,'Walmart','nut',300,80,3,0,600,0],
+  ['Pecans, Halves (16oz)',100,691,9,14,72,10,1.4,0.4,'Kroger','nut',0,70,2.5,1,410,0],
+  ['Chia Seeds (2lb)',100,486,17,42,31,34,0.45,0.45,'Walmart','seed',16,631,7.7,1,407,0],
+  ['Flaxseed, Ground (16oz)',100,534,18,29,42,27,0.35,0.45,'Kroger','seed',30,255,5.7,0,813,0],
+  ['Pumpkin Seeds, Roasted (16oz)',100,559,30,15,49,6,0.75,0.63,'Walmart','seed',18,46,8.8,0,809,0],
+  ['Hemp Hearts (16oz)',100,553,32,9,49,4,1.6,0.63,'Kroger','seed',5,70,7.9,0,1200,0],
+  ['Quinoa, Dry (4lb)',100,368,14,64,6,7,0.35,0.83,'Walmart','grain',5,47,4.6,0,563,0],
+  ['Barley, Pearled, Dry (2lb)',100,352,9.9,77,1.2,15.6,0.2,0.44,'Kroger','grain',9,29,2.5,0,280,0],
+  ['Cornmeal / Grits, Dry (2lb)',100,370,8.1,79,3.9,6.9,0.15,0.36,'Walmart','grain',5,7,4.4,0,287,0],
+  ['Couscous, Dry (16oz)',100,376,12.8,77,0.6,5,0.3,0.42,'Kroger','grain',10,24,1.3,0,180,0],
+  ['Bagels, Plain (6ct)',100,257,10,50,1.5,2.1,0.3,0.42,'Walmart','grain',460,90,2.9,0,130,0],
+  ['Corn Flakes Cereal (18oz)',100,357,7.5,84,0.4,2.7,0.22,0.42,'Kroger','grain',660,10,20,10,120,1.5],
+  ['English Muffins (6ct)',100,235,8.2,46,1.8,2.6,0.28,0.42,'Walmart','grain',480,150,2.5,0,120,0],
+  ['Rice Cakes, Plain (4.9oz)',100,387,8.2,82,2.8,3.9,0.55,0.44,'Kroger','grain',23,10,1.3,0,180,0],
+  ['Whole Wheat Pasta, Dry (16oz)',56,190,8,37,1.5,6,0.2,0.48,'Walmart','grain',1,10,1.9,0,100,0],
+  ['Egg Noodles, Dry (12oz)',56,213,7.6,39.7,2.5,1.8,0.3,0.45,'Kroger','grain',8,10,2,0,90,0.1],
+  ['Steel Cut Oats (2lb)',100,379,13.5,68,6.5,10,0.3,0.57,'Walmart','grain',6,52,4.7,0,371,0],
+  ['Corn Tortillas (30ct)',100,218,5.7,44.6,2.8,6.3,0.15,0.36,'Kroger','grain',22,141,1.2,0,190,0],
+  ['Whole Wheat Tortillas (10ct)',100,250,7,42,6,5,0.35,0.42,'Walmart','grain',480,80,2.2,0,150,0],
+  ['Naan Bread (2ct)',100,310,9,50,8,2,0.55,0.42,'Kroger','grain',480,60,2.5,0,120,0],
+  ['Pita Bread, Whole Wheat (6ct)',100,247,10,48,1.7,7,0.3,0.44,'Walmart','grain',420,80,2.4,0,170,0],
+  ['Red Potatoes (5lb)',100,70,1.9,15.7,0.1,1.6,0.09,0.55,'Walmart','tuber',6,10,0.6,10,410,0],
+  ['Yukon Gold Potatoes (5lb)',100,74,2,17,0.1,1.8,0.1,0.55,'Kroger','tuber',6,11,0.7,11,420,0],
+  ['Frozen Hash Browns (32oz)',100,110,1.8,20,2.5,1.6,0.13,0.55,'Walmart','tuber',35,10,0.5,6,300,0],
+  ['Frozen Cassava/Yuca (2lb)',100,160,1.4,38,0.3,1.8,0.35,0.45,'Kroger','tuber',14,16,0.3,21,271,0],
+  ['Canned Yams (29oz)',100,100,1.3,23,0.2,3,0.16,0.55,'Walmart','tuber',22,20,0.7,11,310,0],
+  ['Avocado Oil (25oz)',14,124,0,0,14,0,0.22,0,'Walmart','oil',0,0,0,0,0,0],
+  ['Coconut Oil (29oz)',14,121,0,0,13.5,0,0.2,0,'Kroger','oil',0,0,0,0,0,0],
+  ['Sesame Oil (12oz)',14,120,0,0,13.6,0,0.35,0,'Walmart','oil',0,0,0,0,0,0],
+  ['Vegetable Oil Blend (48oz)',14,124,0,0,14,0,0.06,0,'Kroger','oil',0,0,0,0,0,0],
+  ['Peanut Oil (48oz)',14,119,0,0,13.5,0,0.15,0,'Walmart','oil',0,0,0,0,0,0],
+  ['Fresh Tomatoes (per lb)',100,18,0.9,3.9,0.2,1.2,0.35,0,'Walmart','veg',5,10,0.3,14,237,0],
+  ['Fresh Bell Peppers (per lb)',100,31,1,6,0.3,2.1,0.55,0,'Kroger','veg',4,7,0.4,128,211,0],
+  ['Fresh Cucumbers (each)',100,15,0.7,3.6,0.1,0.5,0.3,0,'Walmart','veg',2,16,0.3,3,147,0],
+  ['Fresh Green Beans (1lb)',100,31,1.8,7,0.2,3.4,0.45,0,'Kroger','veg',6,37,1,12,211,0],
+  ['Fresh Broccoli Crowns (per lb)',100,34,2.8,6.6,0.4,2.6,0.45,0,'Walmart','veg',33,47,0.7,89,316,0],
+  ['Fresh Spinach, Bagged (5oz)',100,23,2.9,3.6,0.4,2.2,0.65,0,'Kroger','veg',79,99,2.7,28,558,0],
+  ['Frozen Green Peas (16oz)',100,81,5.4,14,0.4,5.1,0.15,0.51,'Walmart','veg',5,25,1.5,14,244,0],
+  ['Frozen Corn (16oz)',100,96,3.4,21,1.5,2.4,0.12,0.36,'Kroger','veg',6,2,0.5,7,218,0],
+  ['Frozen Cauliflower (16oz)',100,23,1.9,4.1,0.1,2,0.18,0,'Walmart','veg',15,16,0.3,44,213,0],
+  ['Frozen Green Beans (16oz)',100,31,1.8,7,0.1,2.7,0.15,0,'Kroger','veg',1,37,1,9,151,0],
+  ['Mushrooms, White (8oz)',100,22,3.1,3.3,0.3,1,0.55,0.35,'Walmart','veg',5,3,0.5,2,318,0],
+  ['Zucchini (per lb)',100,17,1.2,3.1,0.3,1,0.35,0,'Kroger','veg',8,16,0.4,18,261,0],
+  ['Celery (bunch)',100,16,0.7,3,0.2,1.6,0.25,0,'Walmart','veg',80,40,0.2,3,260,0],
+  ['Kale, Bagged Chopped (10oz)',100,49,4.3,8.8,0.9,3.6,0.6,0,'Kroger','veg',38,150,1.5,120,348,0],
+  ['Romaine Lettuce (hearts, 3ct)',100,17,1.2,3.3,0.3,2.1,0.3,0,'Walmart','veg',8,33,1,4,247,0],
+  ['Frozen Butternut Squash (16oz)',100,40,0.9,10,0.1,1.8,0.2,0,'Kroger','veg',4,42,0.6,21,352,0],
+  ['Canned Diced Tomatoes (28oz)',100,18,0.9,4,0.1,1,0.09,0,'Walmart','veg',180,15,0.7,8,220,0],
+  ['Canned Corn (15oz)',100,78,2.5,16.5,0.9,1.8,0.17,0.36,'Kroger','veg',250,4,0.4,5,180,0],
+  ['Canned Green Beans (14.5oz)',100,18,1,3.5,0.1,1.6,0.12,0,'Walmart','veg',310,25,0.7,4,115,0],
+  ['Fresh Asparagus (per lb)',100,20,2.2,3.9,0.1,2.1,0.75,0,'Kroger','veg',2,24,2.1,5.6,202,0],
+  ['Frozen Brussels Sprouts (16oz)',100,36,2.6,7.1,0.3,3.3,0.28,0,'Walmart','veg',23,32,1.2,60,342,0],
+  ['Eggplant (each)',100,25,1,5.9,0.2,3,0.4,0,'Kroger','veg',2,9,0.2,2,229,0],
+  ['Grapes, Red/Green (per lb)',100,69,0.7,18,0.2,0.9,0.55,0,'Walmart','fruit',2,10,0.4,3.2,191,0],
+  ['Strawberries, Fresh (1lb)',100,32,0.7,7.7,0.3,2,0.65,0,'Kroger','fruit',1,16,0.4,59,153,0],
+  ['Blueberries, Fresh (1pt)',100,57,0.7,14.5,0.3,2.4,1.1,0,'Walmart','fruit',1,6,0.3,9.7,77,0],
+  ['Pineapple, Fresh (each)',100,50,0.5,13.1,0.1,1.4,0.2,0,'Kroger','fruit',1,13,0.3,48,109,0],
+  ['Mango, Fresh (each)',100,60,0.8,15,0.4,1.6,0.35,0,'Walmart','fruit',1,11,0.2,36,168,0],
+  ['Watermelon (per lb)',100,30,0.6,7.6,0.2,0.4,0.12,0,'Kroger','fruit',1,7,0.2,8.1,112,0],
+  ['Pears, Fresh (each)',100,57,0.4,15.2,0.1,3.1,0.6,0,'Walmart','fruit',1,9,0.2,4.3,116,0],
+  ['Peaches, Fresh (per lb)',100,39,0.9,9.5,0.3,1.5,0.65,0,'Kroger','fruit',0,6,0.3,6.6,190,0],
+  ['Raisins (16oz)',100,299,3.1,79,0.5,3.7,0.45,0,'Walmart','fruit',11,50,1.9,2.3,749,0],
+  ['Dried Apricots (12oz)',100,241,3.4,63,0.5,7.3,0.85,0,'Kroger','fruit',10,55,2.7,1,1162,0],
+  ['Frozen Peaches (16oz)',100,44,0.7,11.3,0.1,1.5,0.2,0,'Walmart','fruit',0,4,0.3,4,140,0],
+  ['Frozen Strawberries (16oz)',100,33,0.7,7.7,0.1,2,0.16,0,'Kroger','fruit',1,13,0.6,43,116,0],
+  ['Canned Pineapple in Juice (20oz)',100,60,0.4,15.5,0.1,0.7,0.15,0,'Walmart','fruit',1,9,0.3,10,120,0],
+  ['Applesauce, Unsweetened (24oz)',100,42,0.2,11,0.1,1.2,0.14,0,'Kroger','fruit',1,4,0.1,1,68,0],
+  ['Kiwi, Fresh (each)',100,61,1.1,14.7,0.5,3,0.55,0,'Walmart','fruit',3,34,0.3,93,312,0],
+  ['Cantaloupe (each)',100,34,0.8,8.2,0.2,0.9,0.18,0,'Kroger','fruit',16,9,0.2,37,267,0]
+];
+const CAT_CAPS={meat:6,fish:6,egg:8,dairy:6,supplement:5,legume:5,soy:6,nut:5,seed:5,grain:8,tuber:6,oil:6,veg:8,fruit:5};
+
+const FOODS=FOOD_DATABASE.map(([name,serving_g,kcal,protein,carb,fat,fiber,price,diaas,store,category,
+    sodium,calcium,iron,vitc,potassium,b12])=>({
+  name,serving_g,kcal,protein,carb,fat,fiber,defaultPrice:price,price,diaas,store,category,
+  sodium,calcium,iron,vitc,potassium,b12,
+  key:name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''),
+  effectiveProtein:protein*diaas,
+  maxDailyServings:CAT_CAPS[category]||6,
+  get costPerEffProt(){return this.effectiveProtein>0?this.price/this.effectiveProtein:Infinity;}
+})).sort((a,b)=>a.costPerEffProt-b.costPerEffProt);
+FOODS.forEach((f,i)=>f.id=i);
+log(LogLevel.INFO,'Food DB loaded',{count:FOODS.length,cheapestEffProtein:FOODS.slice(0,3).map(f=>f.name)});
+
+function groupOf(f){
+  if(f.category==='dairy'&&/butter/i.test(f.name))return 'fat';
+  return f.category;
+}
+const GROUP_LABEL={veg:'vegetables',fruit:'fruit',dairy:'dairy',fish:'fish/seafood',egg:'eggs',legume:'legumes'};
+
+/* ---------- BUDGET MODES ---------- */
+const COST_MODES={
+  cheap:{
+    key:'cheap',short:'Super-cheap',label:'Super-cheap — repetition OK',
+    obj:'cost',capMult:3,perFoodCap:null,perFoodCapVeg:null,groupMin:{},
+    desc:'Pure lowest cost, same foods every day welcome. Lentils + sardines + whey 8×/day is a valid answer here — micros still enforced.'
+  },
+  balanced:{
+    key:'balanced',short:'Balanced',label:'Balanced — cheap + variety',
+    obj:'cost',capMult:1,perFoodCap:2,perFoodCapVeg:3,
+    groupMin:{veg:3,fruit:2,dairy:1,fish:1,egg:1},
+    desc:'Still cost-optimized, but the solver must use multiple protein sources plus vegetables, fruit, dairy, fish and eggs — max ~2 servings of any one food.'
+  },
+  rich:{
+    key:'rich',short:'Cost-no-object',label:'Cost no object — max quality',
+    obj:'quality',capMult:1,perFoodCap:2,perFoodCapVeg:3,
+    groupMin:{veg:4,fruit:3,dairy:2,fish:2,egg:2},
+    desc:'Price is ignored. The solver maximizes food quality (DIAAS protein, fish, produce, whole grains) while hitting macros. The resulting $/day is shown for curiosity.'
+  }
+};
+
+function qualityScore(f){
+  let q=(f.diaas||0)*0.6;
+  const c=f.category;
+  if(c==='fish')q+=0.35;
+  if(c==='veg')q+=0.30;
+  if(c==='fruit')q+=0.25;
+  if(c==='legume')q+=0.15;
+  if(c==='nut'||c==='seed')q+=0.20;
+  if(c==='egg')q+=0.15;
+  if(c==='dairy'&&!/butter/i.test(f.name))q+=0.15;
+  if(/oats|brown rice|whole wheat|sweet potato/i.test(f.name))q+=0.20;
+  if(/olive oil/i.test(f.name))q+=0.15;else if(c==='oil')q+=0.05;
+  if(/vienna/i.test(f.name))q-=0.30;
+  if(f.fiber>=3)q+=0.10;
+  return q;
+}
+
+/* ---------- two-phase simplex ---------- */
+class SimplexSolver{
+  constructor(){this.eps=1e-9;this.maxIter=4000;this.iters=0;}
+  solve(c,constraints){
+    const n=c.length,m=constraints.length;
+    this.iters=0;
+    if(m===0){
+      if(c.some(v=>v<-this.eps))return this.fail('Unbounded');
+      return {success:true,x:new Array(n).fill(0),value:0,duals:[],iterations:0,message:'No constraints'};
+    }
+    const rows=constraints.map(cn=>cn.b<0
+      ?{row:cn.row.map(v=>-v),b:-cn.b,type:cn.type==='le'?'ge':(cn.type==='ge'?'le':'eq'),flipped:true}
+      :{row:cn.row,b:cn.b,type:cn.type,flipped:false});
+    let nSlack=0,nSurplus=0,nArt=0;
+    rows.forEach(r=>{if(r.type==='le')nSlack++;else if(r.type==='ge'){nSurplus++;nArt++;}else nArt++;});
+    const slackStart=n,surplusStart=n+nSlack,artStart=n+nSlack+nSurplus,totalVars=artStart+nArt,W=totalVars+1;
+    const T=Array.from({length:m+1},()=>new Array(W).fill(0));
+    const basic=new Array(m),dualCol=new Array(m),rowFlipped=new Array(m);
+    let si=0,su=0,ai=0;
+    for(let i=0;i<m;i++){
+      const r=rows[i];
+      for(let j=0;j<n;j++)T[i][j]=r.row[j];
+      if(r.type==='le'){T[i][slackStart+si]=1;basic[i]=slackStart+si;dualCol[i]=slackStart+si;si++;}
+      else if(r.type==='ge'){T[i][surplusStart+su]=-1;T[i][artStart+ai]=1;basic[i]=artStart+ai;dualCol[i]=surplusStart+su;su++;ai++;}
+      else{T[i][artStart+ai]=1;basic[i]=artStart+ai;dualCol[i]=artStart+ai;ai++;}
+      T[i][totalVars]=r.b;rowFlipped[i]=r.flipped;
+    }
+    const M=m,R=T[M];
+    if(nArt>0){
+      for(let k=0;k<nArt;k++)R[artStart+k]=-1;
+      for(let i=0;i<m;i++){
+        const bv=basic[i];
+        if(bv>=artStart){
+          const f=R[bv];
+          for(let j=0;j<W;j++)R[j]-=f*T[i][j];
+        }
+      }
+      let stall=0;
+      for(let guard=0;guard<this.maxIter;guard++){
+        if(this.iters>this.maxIter)return this.fail('Phase 1 iteration limit');
+        const e=this.entering(R,artStart,stall>60);
+        if(e===-1)break;
+        const l=this.ratio(T,m,e);
+        if(l===-1)return this.fail('Phase 1 unbounded (numerical)');
+        const prev=R[totalVars];
+        this.pivot(T,basic,l,e,M);
+        this.iters++;
+        if(R[totalVars]>=prev-1e-12)stall++;else stall=0;
+      }
+      if(R[totalVars]>1e-6)return this.fail('Infeasible — targets can\u2019t be met with the allowed foods/caps');
+      for(let i=0;i<m;i++){
+        if(basic[i]>=artStart){
+          for(let j=0;j<artStart;j++){
+            if(Math.abs(T[i][j])>1e-7){this.pivot(T,basic,i,j,M);this.iters++;break;}
+          }
+        }
+      }
+    }
+    R.fill(0);
+    for(let j=0;j<n;j++)R[j]=-c[j];
+    for(let i=0;i<m;i++){
+      const f=R[basic[i]];
+      if(Math.abs(f)>this.eps)for(let j=0;j<W;j++)R[j]-=f*T[i][j];
+    }
+    let stall=0;
+    for(let guard=0;guard<this.maxIter;guard++){
+      if(this.iters>this.maxIter)return this.fail('Iteration limit');
+      const e=this.entering(R,artStart,stall>60);
+      if(e===-1)break;
+      const l=this.ratio(T,m,e);
+      if(l===-1)return this.fail('Unbounded objective');
+      const prev=R[totalVars];
+      this.pivot(T,basic,l,e,M);
+      this.iters++;
+      if(R[totalVars]<=prev+1e-12)stall++;else stall=0;
+    }
+    const x=new Array(n).fill(0);
+    for(let i=0;i<m;i++)if(basic[i]<n)x[basic[i]]=Math.max(0,T[i][totalVars]);
+    const duals=new Array(m);
+    for(let i=0;i<m;i++){
+      let y=T[M][dualCol[i]];
+      if(rows[i].type==='ge')y=-y;
+      if(rowFlipped[i])y=-y;
+      duals[i]=y;
+    }
+    return {success:true,x,value:R[totalVars],duals,iterations:this.iters,message:'Optimal'};
+  }
+  entering(R,artStart,bland){
+    if(!bland){
+      let e=-1,best=this.eps;
+      for(let j=0;j<artStart;j++)if(R[j]>best){best=R[j];e=j;}
+      return e;
+    }
+    for(let j=0;j<artStart;j++)if(R[j]>this.eps)return j;
+    return -1;
+  }
+  ratio(T,m,e){
+    let l=-1,minR=Infinity;
+    for(let i=0;i<m;i++)if(T[i][e]>this.eps){
+      const r=T[i][T[i].length-1]/T[i][e];
+      if(r<minR-1e-12){minR=r;l=i;}
+    }
+    return l;
+  }
+  pivot(T,basic,l,e,M){
+    const W=T[l].length,pv=T[l][e];
+    for(let j=0;j<W;j++)T[l][j]/=pv;
+    for(let i=0;i<=M;i++)if(i!==l&&T[i][e]!==0){
+      const f=T[i][e];
+      for(let j=0;j<W;j++)T[i][j]-=f*T[l][j];
+      T[i][e]=0;
+    }
+    basic[l]=e;
+    for(let i=0;i<=M;i++){const v=T[i][W-1];if(v<0&&v>-1e-7)T[i][W-1]=0;}
+  }
+  fail(message){return {success:false,x:null,value:Infinity,duals:null,iterations:this.iters,message};}
+}
+
+/* ---------- meal optimizer ---------- */
+const MEAL_NAMES={
+  1:['Your one big meal'],
+  2:['Brunch','Dinner'],
+  3:['Breakfast','Lunch','Dinner'],
+  4:['Breakfast','Lunch','Snack','Dinner'],
+  5:['Breakfast','Snack','Lunch','Snack','Dinner'],
+  6:['Breakfast','Snack','Lunch','Snack','Dinner','Evening snack']
+};
+const MEAL_TIMES={
+  1:['18:00'],
+  2:['11:00','18:30'],
+  3:['07:30','13:00','19:00'],
+  4:['07:00','12:00','16:00','19:30'],
+  5:['07:00','10:00','13:00','16:30','19:30'],
+  6:['07:00','09:30','12:30','15:30','18:00','21:00']
+};
+
+/* ---------- v5.0: Ledger meal slots ----------
+   The optimizer can plan 1-6 meals with fluid names (Brunch, Snack,
+   Evening snack...); the Ledger always uses these 4 fixed buckets so a
+   day's log reads the same regardless of how many meals the plan used. */
+const LEDGER_MEALS=[['breakfast','Breakfast'],['lunch','Lunch'],['dinner','Dinner'],['snacks','Snacks']];
+function ledgerBucketForMealName(name){
+  if(name==='Breakfast')return 'breakfast';
+  if(name==='Lunch')return 'lunch';
+  if(name==='Dinner')return 'dinner';
+  return 'snacks'; // Brunch, Snack, Evening snack, OMAD's "Your one big meal", anything else
+}
+function groupEntriesByMeal(entries){
+  const g={breakfast:[],lunch:[],dinner:[],snacks:[]};
+  (entries||[]).forEach(e=>{
+    const bucket=(e&&g[e.meal])?e.meal:'snacks';
+    g[bucket].push(e);
+  });
+  return g;
+}
+
+const MealOptimizer={
+  STEP:0.25,MIN_SERVE:0.125,
+
+  buildProblem(targets,mode,excluded,pinned,capMult){
+    const n=FOODS.length;
+    const isAllowed=FOODS.map(f=>!excluded.has(f.key));
+    const kcal=FOODS.map(f=>f.kcal),prot=FOODS.map(f=>f.effectiveProtein),
+          fat=FOODS.map(f=>f.fat),carb=FOODS.map(f=>f.carb),fib=FOODS.map(f=>f.fiber);
+    const cons=[
+      {row:kcal,b:targets.calorieTarget+50,type:'le',label:'Calorie cap'},
+      {row:kcal,b:Math.max(0,targets.calorieTarget-50),type:'ge',label:'Calorie floor'},
+      {row:prot,b:targets.proteinTarget+15,type:'le',label:'Eff. protein cap'},
+      {row:prot,b:Math.max(0,targets.proteinTarget-15),type:'ge',label:'Eff. protein floor'},
+      {row:fat,b:targets.fatTarget+10,type:'le',label:'Fat cap'},
+      {row:fat,b:Math.max(0,targets.fatTarget-10),type:'ge',label:'Fat floor'},
+      {row:carb,b:targets.carbTarget+50,type:'le',label:'Carb cap'},
+      {row:carb,b:Math.max(0,targets.carbTarget-50),type:'ge',label:'Carb floor'},
+      {row:fib,b:25,type:'ge',label:'Fiber floor (25g)'}
+    ];
+    const mi=targets.micro;
+    if(mi){
+      const sod=FOODS.map(f=>f.sodium),calm=FOODS.map(f=>f.calcium),
+            iro=FOODS.map(f=>f.iron),vit=FOODS.map(f=>f.vitc),b12r=FOODS.map(f=>f.b12);
+      cons.push({row:sod,b:mi.sodiumMax,type:'le',label:'Sodium cap (≤ '+mi.sodiumMax+'mg)'});
+      const microFloor=(row,min,label)=>{
+        if(min<=0)return;
+        if(row.some((v,i)=>isAllowed[i]&&v>0))
+          cons.push({row,b:min,type:'ge',label:label+' (≥ '+min+')'});
+        else
+          log(LogLevel.WARN,label+': no allowed food sources — constraint skipped (supplement?)');
+      };
+      microFloor(calm,mi.caMin,'Calcium floor');
+      microFloor(iro,mi.feMin,'Iron floor');
+      microFloor(vit,mi.vcMin,'Vitamin C floor');
+      microFloor(b12r,mi.b12Min,'B12 floor');
+    }
+    const caps=FOODS.map((f,i)=>{
+      if(!isAllowed[i])return 0;
+      let cap=f.maxDailyServings*mode.capMult*capMult;
+      if(mode.perFoodCap&&capMult===1){
+        const oc=(f.category==='veg'||f.category==='fruit')?mode.perFoodCapVeg:mode.perFoodCap;
+        cap=Math.min(cap,oc);
+      }
+      if(pinned.has(f.key))cap=Math.max(cap,1);
+      return cap;
+    });
+    for(let i=0;i<n;i++){
+      const row=new Array(n).fill(0);row[i]=1;
+      cons.push({row,b:caps[i],type:'le',label:'Cap: '+FOODS[i].name});
+    }
+    for(const [g,min] of Object.entries(mode.groupMin)){
+      const row=new Array(n).fill(0);let any=false;
+      FOODS.forEach((f,i)=>{if(isAllowed[i]&&groupOf(f)===g){row[i]=1;any=true;}});
+      if(any)cons.push({row,b:min,type:'ge',label:`Group min: ${GROUP_LABEL[g]} ≥ ${min} serving${min>1?'s':''}`});
+      else log(LogLevel.WARN,`Group "${GROUP_LABEL[g]}" has no allowed foods — minimum skipped`);
+    }
+    FOODS.forEach((f,i)=>{
+      if(isAllowed[i]&&pinned.has(f.key)){
+        const row=new Array(n).fill(0);row[i]=1;
+        cons.push({row,b:1,type:'ge',label:'Pin: '+f.name});
+      }
+    });
+    const c=mode.obj==='cost'
+      ?FOODS.map(f=>f.price)
+      :FOODS.map(f=>+(4-qualityScore(f)).toFixed(3));
+    return {cons,c,caps,isAllowed};
+  },
+
+  solveLP(targets,excluded,pinned,mode,capMult){
+    const {cons,c}=this.buildProblem(targets,mode,excluded,pinned,capMult);
+    const r=new SimplexSolver().solve(c,cons);
+    r.labels=cons.map(cn=>cn.label);
+    return r;
+  },
+
+  ladderCost(targets,excluded,pinned,modeKey){
+    const r=this.solveLP(targets,excluded,pinned,COST_MODES[modeKey],1);
+    if(!r.success)return null;
+    return FOODS.reduce((s,f,i)=>s+(r.x[i]||0)*f.price,0);
+  },
+
+  optimize(targets,excluded,pinned,modeKey){
+    const mode=COST_MODES[modeKey];
+    const isAllowed=FOODS.map(f=>!excluded.has(f.key));
+    if(!isAllowed.some(Boolean))toast('All foods are excluded — reset exclusions in the Foods tab.');
+    for(const capMult of [1,2,4]){
+      const {cons,c,caps}=this.buildProblem(targets,mode,excluded,pinned,capMult);
+      const r=new SimplexSolver().solve(c,cons);
+      if(r.success){
+        r.labels=cons.map(cn=>cn.label);
+        log(LogLevel.INFO,'LP solved',{mode:modeKey,capMult,iterations:r.iterations,
+          dailyCost:+FOODS.reduce((s,f,i)=>s+(r.x[i]||0)*f.price,0).toFixed(2)});
+        if(capMult>1)log(LogLevel.WARN,`Serving/variety caps relaxed ×${capMult} to find a feasible plan`);
+        return this.finalize(r,targets,mode,caps,isAllowed,pinned);
+      }
+      log(LogLevel.WARN,'LP attempt failed',{mode:modeKey,capMult,message:r.message});
+    }
+    log(LogLevel.WARN,'Falling back to greedy heuristic — plan may miss targets');
+    return this.greedyFallback(targets,isAllowed,pinned,mode);
+  },
+
+  finalize(r,targets,mode,caps,isAllowed,pinned){
+    const maxCap=i=>isAllowed[i]?caps[i]:0;
+    const servings=this.roundAndRefine(r.x,targets,mode,maxCap,isAllowed,pinned);
+    const totals=this.computeTotals(servings);
+    const check=this.checkViolations(servings,totals,targets,mode,isAllowed);
+    return {success:true,solver:'lp',modeKey:mode.key,objective:mode.obj,servings,totals,cost:totals.cost,
+      mealPlan:this.assembleMeals(servings,targets.meals),
+      duals:r.duals,dualLabels:r.labels,iterations:r.iterations,warnings:check.msgs};
+  },
+
+  roundAndRefine(x,targets,mode,maxCap,isAllowed,pinned){
+    let s=x.map((v,i)=>isAllowed[i]?Math.max(0,Math.round(v/this.STEP)*this.STEP):0);
+    for(let it=0;it<160;it++){
+      if(this.checkViolations(s,null,targets,mode,isAllowed).count===0)break;
+      let best=null,bestScore=Infinity;
+      for(let i=0;i<s.length;i++){
+        if(!isAllowed[i])continue;
+        for(const d of[this.STEP,-this.STEP]){
+          const ns=s[i]+d;
+          if(ns<-1e-9||ns>maxCap(i)+1e-9)continue;
+          if(pinned.has(FOODS[i].key)&&ns<1)continue;
+          const ts=s.slice();ts[i]=Math.round(ns*1000)/1000;
+          const score=this.checkViolations(ts,null,targets,mode,isAllowed).count*10000+Math.abs(d*FOODS[i].price);
+          if(score<bestScore-1e-12){bestScore=score;best={i,d};}
+        }
+      }
+      if(!best)break;
+      s[best.i]=Math.round((s[best.i]+best.d)*1000)/1000;
+    }
+    // v5.0: with a much larger food universe, the local search above can
+    // occasionally leave a group minimum (e.g. "≥2 servings of fish") just
+    // short after 0.25-step rounding. Top it up deterministically with the
+    // cheapest still-available food in that group rather than leaving it
+    // to chance — mirrors how greedyFallback seeds group minimums.
+    for(const [g,min] of Object.entries(mode.groupMin||{})){
+      let sum=0;
+      s.forEach((v,i)=>{if(v>=this.MIN_SERVE&&isAllowed[i]&&groupOf(FOODS[i])===g)sum+=v;});
+      if(sum>=min-1e-6)continue;
+      const pool=FOODS.map((f,i)=>({f,i})).filter(({f,i})=>isAllowed[i]&&groupOf(f)===g)
+        .sort((a,b)=>a.f.price-b.f.price);
+      for(const {f,i} of pool){
+        if(sum>=min-1e-6)break;
+        const cap=maxCap(i);
+        while(sum<min-1e-6&&s[i]+this.STEP<=cap+1e-9){
+          s[i]=Math.round((s[i]+this.STEP)*1000)/1000;
+          sum+=this.STEP;
+        }
+      }
+    }
+    return s.map(v=>v<this.MIN_SERVE?0:v);
+  },
+
+  computeTotals(s){
+    const t={kcal:0,protein:0,effProtein:0,carb:0,fat:0,fiber:0,cost:0,
+      sodium:0,calcium:0,iron:0,vitc:0,potassium:0,b12:0};
+    s.forEach((v,i)=>{
+      if(v<this.MIN_SERVE)return;
+      const f=FOODS[i];
+      t.kcal+=f.kcal*v;t.protein+=f.protein*v;t.effProtein+=f.effectiveProtein*v;
+      t.carb+=f.carb*v;t.fat+=f.fat*v;t.fiber+=f.fiber*v;t.cost+=f.price*v;
+      t.sodium+=f.sodium*v;t.calcium+=f.calcium*v;t.iron+=f.iron*v;
+      t.vitc+=f.vitc*v;t.potassium+=f.potassium*v;t.b12+=f.b12*v;
+    });
+    return t;
+  },
+
+  checkViolations(s,totalsIn,tar,mode,isAllowed){
+    const totals=totalsIn||this.computeTotals(s);
+    const msgs=[];let count=0;
+    const add=(cond,msg)=>{if(cond){count++;msgs.push(msg);}};
+    add(Math.abs(totals.kcal-tar.calorieTarget)>50,`Calories ${Math.round(totals.kcal)} vs ${tar.calorieTarget} target (±50 allowed)`);
+    add(totals.effProtein<tar.proteinTarget-15||totals.effProtein>tar.proteinTarget+15,`Effective protein ${Math.round(totals.effProtein)}g vs ${tar.proteinTarget}g (±15 allowed)`);
+    add(totals.fat>tar.fatTarget+10||totals.fat<Math.max(0,tar.fatTarget-10),`Fat ${Math.round(totals.fat)}g vs ${tar.fatTarget}g (±10 allowed)`);
+    add(Math.abs(totals.carb-tar.carbTarget)>50,`Carbs ${Math.round(totals.carb)}g vs ${tar.carbTarget}g (±50 allowed)`);
+    add(totals.fiber<25,`Fiber ${totals.fiber.toFixed(1)}g below the 25g minimum`);
+    const mi=tar.micro;
+    if(mi){
+      add(totals.sodium>mi.sodiumMax,`Sodium ${Math.round(totals.sodium)}mg over the ${mi.sodiumMax}mg cap — canned/processed foods are the usual culprits`);
+      add(totals.calcium<mi.caMin,`Calcium ${Math.round(totals.calcium)}mg vs ${mi.caMin}mg minimum`);
+      add(totals.iron<mi.feMin,`Iron ${totals.iron.toFixed(1)}mg vs ${mi.feMin}mg minimum`);
+      add(totals.vitc<mi.vcMin,`Vitamin C ${Math.round(totals.vitc)}mg vs ${mi.vcMin}mg minimum`);
+      add(totals.potassium<mi.kMin*0.7,`Potassium ${Math.round(totals.potassium)}mg — soft target ~${mi.kMin}mg (potatoes, beans, milk, bananas help)`);
+      add(totals.b12<mi.b12Min,`Vitamin B12 ${totals.b12.toFixed(1)}µg vs ${mi.b12Min}µg minimum — animal foods or a supplement`);
+    }
+    for(const [g,min] of Object.entries(mode.groupMin)){
+      let sum=0;
+      s.forEach((v,i)=>{if(v>=this.MIN_SERVE&&isAllowed[i]&&groupOf(FOODS[i])===g)sum+=v;});
+      add(sum<min-1e-6,`${GROUP_LABEL[g]}: ${sum.toFixed(2)} of required ${min} servings`);
+    }
+    return {count,msgs};
+  },
+
+  assembleMeals(s,nMeals){
+    const items=[];
+    s.forEach((v,i)=>{if(v>=this.MIN_SERVE)items.push({pos:i,rem:v});});
+    const tot=this.computeTotals(s);
+    const meals=Array.from({length:nMeals},()=>({foods:[],kcal:0,protein:0,effProtein:0,carb:0,fat:0,fiber:0,cost:0}));
+    const kTarget=tot.kcal/nMeals,pTarget=tot.effProtein/nMeals;
+    const pour=(mi,pos,amt)=>{
+      const f=FOODS[pos],m=meals[mi];
+      const ex=m.foods.find(g=>g.pos===pos);
+      if(ex)ex.servings+=amt;else m.foods.push({pos,servings:amt});
+      m.kcal+=f.kcal*amt;m.protein+=f.protein*amt;m.effProtein+=f.effectiveProtein*amt;
+      m.carb+=f.carb*amt;m.fat+=f.fat*amt;m.fiber+=f.fiber*amt;m.cost+=f.price*amt;
+    };
+    const dP=i=>pTarget-meals[i].effProtein,dK=i=>kTarget-meals[i].kcal;
+    const anchors=items.filter(it=>FOODS[it.pos].effectiveProtein>=6)
+      .sort((a,b)=>(FOODS[b.pos].effectiveProtein*b.rem)-(FOODS[a.pos].effectiveProtein*a.rem));
+    const sides=items.filter(it=>FOODS[it.pos].effectiveProtein<6)
+      .sort((a,b)=>(FOODS[b.pos].kcal*b.rem)-(FOODS[a.pos].kcal*a.rem));
+    for(const it of anchors){
+      if(it.rem<this.MIN_SERVE)continue;
+      let m=-1,best=-1e18;
+      for(let i=0;i<nMeals;i++){
+        if(meals[i].foods.some(g=>g.pos===it.pos))continue;
+        const sc=dP(i)+(meals[i].foods.length===0?1000:0);
+        if(sc>best){best=sc;m=i;}
+      }
+      if(m<0){m=0;for(let i=1;i<nMeals;i++)if(dP(i)>dP(m))m=i;}
+      const amt=Math.min(1,it.rem);
+      pour(m,it.pos,amt);it.rem-=amt;
+    }
+    let guard=0;
+    while(guard++<5000){
+      const it=anchors.find(x=>x.rem>=this.MIN_SERVE);
+      if(!it)break;
+      let m=0;
+      for(let i=1;i<nMeals;i++){
+        const a=dP(i),b=dP(m);
+        if(a>b+1e-9||(Math.abs(a-b)<=1e-9&&!meals[i].foods.some(g=>g.pos===it.pos)&&meals[m].foods.some(g=>g.pos===it.pos)))m=i;
+      }
+      const amt=Math.min(1,it.rem);
+      pour(m,it.pos,amt);it.rem-=amt;
+    }
+    guard=0;
+    while(guard++<5000){
+      const it=sides.find(x=>x.rem>=this.MIN_SERVE);
+      if(!it)break;
+      let m=0;
+      for(let i=1;i<nMeals;i++){
+        const a=dK(i),b=dK(m);
+        if(a>b+1e-9||(Math.abs(a-b)<=1e-9&&!meals[i].foods.some(g=>g.pos===it.pos)&&meals[m].foods.some(g=>g.pos===it.pos)))m=i;
+      }
+      const amt=Math.min(1,it.rem);
+      pour(m,it.pos,amt);it.rem-=amt;
+    }
+    for(const it of items){
+      if(it.rem>1e-9){
+        let m=0;for(let i=1;i<nMeals;i++)if(dK(i)>dK(m))m=i;
+        pour(m,it.pos,it.rem);it.rem=0;
+      }
+    }
+    meals.forEach(m=>{
+      m.kcal=0;m.protein=0;m.effProtein=0;m.carb=0;m.fat=0;m.fiber=0;m.cost=0;
+      m.foods.forEach(g=>{
+        const f=FOODS[g.pos];
+        m.kcal+=f.kcal*g.servings;m.protein+=f.protein*g.servings;
+        m.effProtein+=f.effectiveProtein*g.servings;m.carb+=f.carb*g.servings;
+        m.fat+=f.fat*g.servings;m.fiber+=f.fiber*g.servings;m.cost+=f.price*g.servings;
+      });
+    });
+    return meals;
+  },
+
+  greedyFallback(targets,isAllowed,pinned,mode){
+    const n=FOODS.length,s=new Array(n).fill(0);
+    FOODS.forEach((f,i)=>{if(isAllowed[i]&&pinned.has(f.key)&&f.maxDailyServings>=1)s[i]=1;});
+    for(const [g,min] of Object.entries(mode.groupMin)){
+      const pool=FOODS.map((f,i)=>({f,i})).filter(({f,i})=>isAllowed[i]&&groupOf(f)===g)
+        .sort((a,b)=>a.f.price-b.f.price);
+      let need=min;
+      for(const {f,i} of pool){
+        if(need<=1e-9)break;
+        const add=Math.min(need,Math.max(1,f.maxDailyServings));
+        s[i]+=add;need-=add;
+      }
+    }
+    const pre=this.computeTotals(s);
+    const rem={kcal:targets.calorieTarget-pre.kcal,prot:targets.proteinTarget-pre.effProtein,
+      fat:targets.fatTarget-pre.fat,carb:targets.carbTarget-pre.carb};
+    const order=FOODS.map((f,i)=>i).filter(i=>isAllowed[i]&&s[i]===0&&FOODS[i].effectiveProtein>0)
+      .sort((a,b)=>FOODS[a].costPerEffProt-FOODS[b].costPerEffProt);
+    for(const i of order){
+      if(rem.prot<=0)break;
+      const f=FOODS[i];
+      let maxS=Math.min(rem.prot/f.effectiveProtein,rem.kcal/f.kcal,
+        f.fat>0?rem.fat/f.fat:Infinity,f.carb>0?rem.carb/f.carb:Infinity,f.maxDailyServings);
+      maxS=Math.max(0,Math.floor(maxS/this.STEP)*this.STEP);
+      if(maxS>=this.MIN_SERVE){
+        s[i]=maxS;
+        rem.kcal-=f.kcal*maxS;rem.prot-=f.effectiveProtein*maxS;
+        rem.fat-=f.fat*maxS;rem.carb-=f.carb*maxS;
+      }
+    }
+    if(rem.kcal>50){
+      const cal=FOODS.map((f,i)=>i).filter(i=>isAllowed[i]&&s[i]<FOODS[i].maxDailyServings)
+        .sort((a,b)=>(FOODS[b].kcal/FOODS[b].price)-(FOODS[a].kcal/FOODS[a].price))[0];
+      if(cal!==undefined){
+        const add=Math.min(rem.kcal/FOODS[cal].kcal,FOODS[cal].maxDailyServings-s[cal]);
+        s[cal]+=Math.max(0,Math.floor(add/this.STEP)*this.STEP);
+      }
+    }
+    let fibTotal=this.computeTotals(s).fiber;
+    if(fibTotal<25){
+      const fb=FOODS.map((f,i)=>i).filter(i=>isAllowed[i]&&FOODS[i].fiber>0&&s[i]<FOODS[i].maxDailyServings)
+        .sort((a,b)=>FOODS[b].fiber/FOODS[b].price-FOODS[a].fiber/FOODS[a].price)[0];
+      if(fb!==undefined){
+        const need=(25-fibTotal)/FOODS[fb].fiber;
+        const add=Math.min(Math.ceil(need/this.STEP)*this.STEP,FOODS[fb].maxDailyServings-s[fb]);
+        s[fb]+=Math.max(0,add);
+      }
+    }
+    const totals=this.computeTotals(s);
+    const check=this.checkViolations(s,totals,targets,mode,isAllowed);
+    return {success:true,solver:'greedy',modeKey:mode.key,objective:mode.obj,servings:s,totals,cost:totals.cost,
+      mealPlan:this.assembleMeals(s,targets.meals),duals:null,dualLabels:[],iterations:0,
+      warnings:check.msgs.concat(['Greedy fallback used — the LP could not find a feasible plan; review targets or re-enable foods.'])};
+  }
+};
+
+/* ---------- training Rx engine ---------- */
+const TrainingEngine={
+  MET:{lift:4.0,zone2:4.5,hiit:8.5},
+  kcalPerMin(met,kg){return met*3.5*kg/200;},
+  compute(specs,targets){
+    const g=specs.goal,age=specs.age,kg=specs.weightKg;
+    const rx={goal:g,split:'',liftS:4,liftMin:60,cardioS:3,cardioMin:40,hiitS:0,hiitMin:15,
+      cardioType:'zone-2 — incline treadmill, bike, or elliptical (able to talk, breathing hard)',
+      steps:8000,notes:[]};
+    if(g==='muscle'){
+      rx.liftS=5;rx.liftMin=70;rx.cardioS=2;rx.cardioMin=30;
+      rx.split='5-day split (PPL + upper/lower, or add a specialization day)';
+    }else if(g==='recomp'){
+      rx.liftS=4;rx.liftMin=60;rx.cardioS=3;rx.cardioMin=40;rx.hiitS=1;
+      rx.split='upper/lower ×2 per week';
+    }else if(g==='fatloss'){
+      rx.liftS=4;rx.liftMin=55;rx.cardioS=5;rx.cardioMin=40;rx.hiitS=1;rx.steps=10000;
+      rx.split='full-body ×4 (keep lifting heavy — muscle retention is the whole game)';
+    }else{
+      rx.liftS=3;rx.liftMin=50;rx.cardioS=3;rx.cardioMin=50;
+      rx.split='full-body ×3';
+    }
+    if(age>=50){
+      rx.liftMin+=10;
+      rx.cardioType='zone-2 — incline walking, cycling, or swimming (joint-friendly)';
+      rx.notes.push('50+: ~10 min of warm-up + mobility is already included in the lifting minutes — joints need it more than they used to.');
+      rx.notes.push('At 50+, keep 1–2 reps in reserve on heavy compounds and take 2 full rest days per week — recovery is the bottleneck now.');
+      rx.notes.push('Muscle is built between sessions: 7–8 h of sleep beats any extra set.');
+    }else if(age<30){
+      rx.notes.push('Recovery is your superpower right now — push intensity, keep sleep at 8 h.');
+    }
+    rx.totalLiftMin=rx.liftS*rx.liftMin;
+    rx.totalCardioMin=rx.cardioS*rx.cardioMin+rx.hiitS*rx.hiitMin;
+    rx.totalMin=rx.totalLiftMin+rx.totalCardioMin;
+    rx.liftKcalWk=Math.round(this.kcalPerMin(this.MET.lift,kg)*rx.totalLiftMin);
+    rx.cardioKcalWk=Math.round(
+      this.kcalPerMin(this.MET.zone2,kg)*rx.cardioS*rx.cardioMin+
+      this.kcalPerMin(this.MET.hiit,kg)*rx.hiitS*rx.hiitMin);
+    const sessions=rx.liftS+rx.cardioS+rx.hiitS;
+    const bands={sedentary:[0,2],light:[1,3],moderate:[3,5],heavy:[6,7],athlete:[8,14]};
+    const band=bands[specs.activity]||[3,5];
+    if(sessions>band[1])rx.notes.push(`This Rx is ${sessions} sessions/week — above your "${specs.activity}" activity setting. Bump Activity Level up a notch, or expect a slightly faster deficit than the calorie math says (fine for fat loss, risky for muscle gain).`);
+    else if(sessions<band[0])rx.notes.push(`This Rx is only ${sessions} sessions/week — below your "${specs.activity}" activity setting. Dial activity down to match, or add easy movement (steps, walks, rec sport) to justify it.`);
+    if(g==='fatloss')rx.notes.push(`Cardio burns ≈ ${rx.cardioKcalWk.toLocaleString()} kcal/week (≈ ${Math.round(rx.cardioKcalWk/7)}/day) on top of the diet deficit — that's the acceleration. If gym performance or sleep degrade, eat back half.`);
+    if(g==='muscle')rx.notes.push('Keep cardio minimal on a max-muscle plan — it burns the surplus you\u2019re paying for in food and can blunt leg recovery.');
+    if(g==='recomp')rx.notes.push(`Cardio ≈ ${rx.cardioKcalWk.toLocaleString()} kcal/week (≈ ${Math.round(rx.cardioKcalWk/7)}/day) — modest on purpose: on recomp the kitchen does the fat loss, the weights do the building.`);
+    rx.notes.push(`Energy check: lifting ≈ ${rx.liftKcalWk.toLocaleString()} kcal/wk, cardio ≈ ${rx.cardioKcalWk.toLocaleString()} kcal/wk. Most of that is already inside your TDEE if the activity setting matches — treat these as sanity checks, not additions.`);
+    log(LogLevel.INFO,'Training Rx',{goal:g,liftMinWk:rx.totalLiftMin,cardioMinWk:rx.totalCardioMin,cardioKcalWk:rx.cardioKcalWk});
+    return rx;
+  }
+};
+
+function mealFreqNote(specs,targets){
+  const kg=specs.weightKg,age=specs.age,n=specs.meals||targets.meals;
+  const ceil=Math.round((age>=40?0.5:0.4)*kg);
+  const perMeal=Math.round(targets.proteinTarget/n);
+  const suggest=Math.min(6,Math.max(3,Math.ceil(targets.proteinTarget/Math.max(1,ceil))));
+  if(perMeal<=ceil)return `${n} meal(s)/day → ~${perMeal}g effective protein each, under your ~${ceil}g/meal utilization ceiling (age-adjusted). Frequency is not your bottleneck — total daily protein is what matters most.`;
+  return `${n} meal(s)/day → ~${perMeal}g each, above the ~${ceil}g/meal your body puts to muscle efficiently at age ${age}. Total daily protein still dominates, but ${suggest} feedings would waste less — a midday shake counts.`;
+}
+
+/* ---------- substitutions / swaps ---------- */
+const Substitutions={
+  candidatesFor(pos){
+    const f=FOODS[pos];
+    const inPlan=new Set();
+    if(App.state.result)App.state.result.servings.forEach((v,i)=>{if(v>=MealOptimizer.MIN_SERVE)inPlan.add(FOODS[i].key);});
+    const pool=FOODS.filter(g=>g.key!==f.key&&!App.state.excluded.has(g.key)&&!inPlan.has(g.key));
+    const score=g=>{
+      let sc=Math.abs(g.effectiveProtein-f.effectiveProtein)*0.6+Math.abs(g.kcal-f.kcal)*0.015
+        +Math.abs(g.fat-f.fat)*0.4+Math.abs(g.carb-f.carb)*0.15+Math.abs(g.fiber-f.fiber)*0.2;
+      if(g.category!==f.category)sc+=8;
+      return sc;
+    };
+    pool.sort((a,b)=>score(a)-score(b));
+    return pool.slice(0,14);
+  },
+  performSwap(oldPos,newPos){
+    const oldF=FOODS[oldPos],newF=FOODS[newPos];
+    App.state.excluded.add(oldF.key);
+    App.state.excluded.delete(newF.key);
+    App.state.pinned.delete(oldF.key);
+    persistExcluded();persistPinned();
+    log(LogLevel.INFO,'Food substituted',{out:oldF.name,in:newF.name});
+    toast(`Swapped ${oldF.name} → ${newF.name}. Re-optimizing…`);
+    App.rerun();
+  }
+};
+
+/* ---------- per-ZIP price profiles ---------- */
+const PriceManager={
+  storageKey(){return 'costmin.prices.'+(App.state.zip||'default');},
+  load(){
+    try{
+      const o=JSON.parse(localStorage.getItem(this.storageKey())||'{}');
+      FOODS.forEach(f=>{if(o[f.key]!=null&&o[f.key]>0)f.price=o[f.key];});
+    }catch(e){}
+  },
+  set(key,val){
+    const f=FOODS.find(x=>x.key===key);
+    if(!f||!(val>0))return false;
+    f.price=Math.round(val*100)/100;
+    this.save();
+    return true;
+  },
+  save(){
+    try{
+      const o={};
+      FOODS.forEach(f=>{if(Math.abs(f.price-f.defaultPrice)>1e-9)o[f.key]=f.price;});
+      localStorage.setItem(this.storageKey(),JSON.stringify(o));
+    }catch(e){}
+  },
+  reset(){
+    FOODS.forEach(f=>f.price=f.defaultPrice);
+    try{localStorage.removeItem(this.storageKey());}catch(e){}
+  },
+  count(){return FOODS.filter(f=>Math.abs(f.price-f.defaultPrice)>1e-9).length;}
+};
+
+function persistExcluded(){try{localStorage.setItem('costmin.excluded',JSON.stringify([...App.state.excluded]));}catch(e){}}
+function persistPinned(){try{localStorage.setItem('costmin.pinned',JSON.stringify([...App.state.pinned]));}catch(e){}}
+
+/* ---------- v5.0: barcode scan → nutrition ----------
+   Tries a local companion backend first (localhost:5000, from the
+   barcode-scanner project — gives FatSecret results when configured),
+   then falls back through resilient Open Food Facts API endpoints.
+
+   parseOffProduct mirrors the nutrition resolution order used by the app's
+   app.py exactly, so scanning behaves the same whether or not the local
+   server is running: prefer OFF's own per-serving nutrient fields, else
+   scale the per-100g figures by serving_quantity, else fall back to a
+   flat 100g (only when the product truly has no serving size on file). */
+function normalizeBarcode(value){
+  let code=String(value||'').replace(/\D/g,'');
+  if(!code)return '';
+  if(code.length<=7)code=code.padStart(8,'0');
+  else if(code.length>=9&&code.length<=12)code=code.padStart(13,'0');
+  return code;
+}
+
+function parseOffProduct(product,barcode){
+  const nutr=product.nutriments||{};
+  const num=k=>{
+    const v=nutr[k];
+    return (v===undefined||v===null||v==='')?null:parseFloat(v);
+  };
+  const firstNum=keys=>{
+    for(const k of keys){const v=num(k);if(v!==null&&Number.isFinite(v))return v;}
+    return null;
+  };
+  let servingQuantity=null;
+  if(product.serving_quantity!=null&&product.serving_quantity!==''){
+    const sq=parseFloat(product.serving_quantity);
+    if(Number.isFinite(sq)&&sq>0)servingQuantity=sq;
+  }
+  const F100={kcal:'energy-kcal_100g',protein:'proteins_100g',carb:'carbohydrates_100g',fat:'fat_100g',fiber:'fiber_100g'};
+  const FSV={kcal:'energy-kcal_serving',protein:'proteins_serving',carb:'carbohydrates_serving',fat:'fat_serving',fiber:'fiber_serving'};
+  const hasServingValues=Object.values(FSV).some(k=>num(k)!==null);
+  let vals={},grams,basis;
+  if(hasServingValues){
+    Object.keys(FSV).forEach(k=>vals[k]=num(FSV[k])||0);
+    grams=servingQuantity||0;
+    basis='serving (as provided by Open Food Facts)';
+  }else if(servingQuantity&&servingQuantity>0){
+    const factor=servingQuantity/100;
+    Object.keys(F100).forEach(k=>vals[k]=(num(F100[k])||0)*factor);
+    grams=servingQuantity;
+    basis='serving (scaled from per-100g data)';
+  }else{
+    Object.keys(F100).forEach(k=>vals[k]=num(F100[k])||0);
+    grams=100;
+    basis='100g (no serving size on file for this product)';
+  }
+  let servingLabel=(product.serving_size||'').trim();
+  if(!servingLabel)servingLabel=grams?(Math.round(grams*10)/10)+' g':'100 g';
+  if(basis.indexOf('100g')===0)servingLabel='100 g (no serving size listed on the package)';
+
+  // Open Food Facts normalizes most weight-based nutrients to grams.
+  // Convert sodium g → mg for CostMin's sodium ledger/optimizer convention.
+  const sodiumServingG = firstNum(['sodium_serving']);
+  const sodium100G = firstNum(['sodium_100g']);
+  let sodiumMg=0;
+  if(hasServingValues && sodiumServingG!==null) sodiumMg=sodiumServingG*1000;
+  else if(servingQuantity&&servingQuantity>0 && sodium100G!==null) sodiumMg=sodium100G*(servingQuantity/100)*1000;
+  else if(sodium100G!==null) sodiumMg=sodium100G*1000;
+
+  const calciumG = hasServingValues?firstNum(['calcium_serving']):(
+    servingQuantity&&servingQuantity>0&&firstNum(['calcium_100g'])!==null
+      ?firstNum(['calcium_100g'])*(servingQuantity/100):firstNum(['calcium_100g'])
+  );
+  const ironG = hasServingValues?firstNum(['iron_serving']):(
+    servingQuantity&&servingQuantity>0&&firstNum(['iron_100g'])!==null
+      ?firstNum(['iron_100g'])*(servingQuantity/100):firstNum(['iron_100g'])
+  );
+  const vitcG = hasServingValues?firstNum(['vitamin-c_serving']):(
+    servingQuantity&&servingQuantity>0&&firstNum(['vitamin-c_100g'])!==null
+      ?firstNum(['vitamin-c_100g'])*(servingQuantity/100):firstNum(['vitamin-c_100g'])
+  );
+  const potassiumG = hasServingValues?firstNum(['potassium_serving']):(
+    servingQuantity&&servingQuantity>0&&firstNum(['potassium_100g'])!==null
+      ?firstNum(['potassium_100g'])*(servingQuantity/100):firstNum(['potassium_100g'])
+  );
+  const b12Mg = hasServingValues?firstNum(['vitamin-b12_serving']):(
+    servingQuantity&&servingQuantity>0&&firstNum(['vitamin-b12_100g'])!==null
+      ?firstNum(['vitamin-b12_100g'])*(servingQuantity/100):firstNum(['vitamin-b12_100g'])
+  );
+
+  return {
+    source:'openfoodfacts',barcode:normalizeBarcode(barcode)||barcode,
+    name:product.product_name||product.product_name_en||'Unnamed product',
+    brand:product.brands||'',
+    serving:servingLabel,servingBasis:basis,
+    grams:Math.round(grams*10)/10||100,
+    kcal:Math.round(vals.kcal),protein:Math.round(vals.protein*10)/10,
+    carb:Math.round(vals.carb*10)/10,fat:Math.round(vals.fat*10)/10,fiber:Math.round(vals.fiber*10)/10,
+    sodium:Math.round((sodiumMg||0)*10)/10,
+    calcium:Math.round((calciumG||0)*1000)/10,
+    iron:Math.round((ironG||0)*1000)/10,
+    vitc:Math.round((vitcG||0)*1000)/10,
+    potassium:Math.round((potassiumG||0)*1000)/10,
+    b12:Math.round((b12Mg||0)*1000000)/1000
+  };
+}
+
+const Scanner={
+  reader:null,scanning:false,lastResult:null,
+  async startCamera(){
+    const wrap=$('scan-video-wrap'),video=$('scan-video');
+    if(!('mediaDevices' in navigator)||!navigator.mediaDevices.getUserMedia){
+      this.setStatus('No camera API in this browser — use manual entry below.',true);return;
+    }
+    if(!window.ZXingBrowser){
+      this.setStatus('Scanner library failed to load (no internet access to unpkg.com?) — use manual entry below.',true);return;
+    }
+    wrap.classList.remove('hidden');
+    $('scan-start-btn').style.display='none';$('scan-stop-btn').style.display='';
+    this.setStatus('Starting camera…');
+    this.reader=new ZXingBrowser.BrowserMultiFormatReader();
+    this.scanning=true;
+    let deviceId;
+    try{
+      const devices=await ZXingBrowser.BrowserCodeReader.listVideoInputDevices();
+      if(!devices.length)throw new Error('no camera devices found');
+      const rear=devices.find(d=>/back|rear|environment/i.test(d.label));
+      deviceId=(rear||devices[devices.length-1]).deviceId;
+    }catch(err){this.setStatus('Could not list cameras: '+err.message,true);this.stopCamera();return;}
+    try{
+      this.controls=await this.reader.decodeFromVideoDevice(deviceId,video,(result)=>{
+        if(result&&this.scanning){const text=result.getText();this.stopCamera();this.lookup(text);}
+      });
+      this.setStatus('Point the camera at a barcode…');
+    }catch(err){this.setStatus('Camera error: '+err.message+' — check permissions, or use manual entry.',true);this.stopCamera();}
+  },
+  stopCamera(){
+    this.scanning=false;
+    if(this.controls){try{this.controls.stop();}catch(e){}this.controls=null;}
+    const wrap=$('scan-video-wrap');if(wrap)wrap.classList.add('hidden');
+    if($('scan-start-btn'))$('scan-start-btn').style.display='';
+    if($('scan-stop-btn'))$('scan-stop-btn').style.display='none';
+  },
+  setStatus(msg,isErr){const el=$('scan-status');if(!el)return;el.textContent=msg||'';el.style.color=isErr?'var(--err)':'var(--muted)';},
+  async tryLocalBackend(barcode){
+    if(typeof AbortController==='undefined')return null;
+    const ctrl=new AbortController();
+    const timer=setTimeout(()=>ctrl.abort(),1500);
+    try{
+      const res=await fetch('http://localhost:5000/api/lookup/'+encodeURIComponent(barcode),{signal:ctrl.signal});
+      clearTimeout(timer);
+      if(!res.ok)return null;
+      const data=await res.json();
+      if(!data.found)return null;
+      return {source:data.source||'local backend',barcode,name:data.name,brand:data.brand||'',
+        serving:data.serving,servingBasis:data.servingBasis||'',grams:data.grams,
+        kcal:data.kcal,protein:data.protein,carb:data.carbs,fat:data.fat,fiber:data.fiber,
+        sodium:data.sodium||0,calcium:data.calcium||0,iron:data.iron||0,vitc:data.vitc||0,
+        potassium:data.potassium||0,b12:data.b12||0};
+    }catch(err){clearTimeout(timer);return null;}
+  },
+  async fetchJsonWithTimeout(url,timeoutMs=5000,headers={}){
+    const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+    const timer=ctrl?setTimeout(()=>ctrl.abort(),timeoutMs):null;
+    try{
+      const res=await fetch(url,{
+        method:'GET',
+        mode:'cors',
+        signal:ctrl?ctrl.signal:undefined,
+        headers:{'Accept':'application/json',...headers},
+        cache:'no-store',
+        redirect:'follow'
+      });
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      return await res.json();
+    }finally{
+      if(timer)clearTimeout(timer);
+    }
+  },
+  parseReaderPayload(payload){
+    // r.jina.ai returns a JSON envelope in JSON mode; the actual target
+    // response is normally inside payload.content. Some deployments return
+    // the target JSON directly, so support both shapes.
+    if(payload&&typeof payload==='object'&&payload.product)return payload;
+    let text='';
+    if(typeof payload==='string')text=payload;
+    else if(payload&&typeof payload.content==='string')text=payload.content;
+    else return null;
+    text=text.trim();
+    if(/^```(?:json)?/i.test(text))text=text.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
+    try{return JSON.parse(text);}catch(e){}
+    const first=text.indexOf('{'),last=text.lastIndexOf('}');
+    if(first>=0&&last>first){
+      try{return JSON.parse(text.slice(first,last+1));}catch(e){}
+    }
+    return null;
+  },
+  async fetchViaReader(targetUrl,timeoutMs=9000){
+    const readerUrl='https://r.jina.ai/'+targetUrl;
+    const payload=await this.fetchJsonWithTimeout(readerUrl,timeoutMs,{'X-Engine':'direct'});
+    const data=this.parseReaderPayload(payload);
+    if(!data)throw new Error('Reader returned content that was not valid product JSON');
+    return data;
+  },
+  async tryOpenFoodFacts(barcode){
+    const code=normalizeBarcode(barcode);
+    if(!code)throw new Error('Invalid barcode');
+
+    // Open Food Facts currently recommends v3 for new integrations. Keep
+    // v2/v0 fallbacks because they remain available for compatibility.
+    const v3=[
+      'https://world.openfoodfacts.org/api/v3/product/'+encodeURIComponent(code)+'.json',
+      'https://us.openfoodfacts.org/api/v3/product/'+encodeURIComponent(code)+'.json'
+    ];
+    const v2=[
+      'https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(code)+'.json',
+      'https://us.openfoodfacts.org/api/v2/product/'+encodeURIComponent(code)+'.json'
+    ];
+    const v0='https://world.openfoodfacts.org/api/v0/product/'+encodeURIComponent(code)+'.json';
+
+    const isFound=data=>!!(data&&data.product&&(
+      data.status===1 || data.status==='success' ||
+      (data.result&&/product[_ ]?found/i.test(String(data.result.id||data.result.name||''))) ||
+      !('status' in data)
+    ));
+    const isMissing=data=>!!(data&&(data.status===0 || (data.result&&/not_found|not found/i.test(String(data.result.id||data.result.name||'')))));
+
+    let foundButMissing=false,networkErrors=0;
+
+    // When this HTML is opened directly from file://, put the server-side
+    // reader first. It avoids the browser-origin/CORS restrictions that can
+    // still affect local files and some browsers even when the public page
+    // itself opens normally.
+    const preferReader=(location.protocol==='file:'||location.protocol==='')&&typeof fetch==='function';
+    const readerTargets=[v3[0],v2[0],v0];
+    if(preferReader){
+      for(const target of readerTargets){
+        try{
+          const data=await this.fetchViaReader(target,8000);
+          if(isFound(data))return parseOffProduct(data.product,code);
+          if(isMissing(data))foundButMissing=true;
+          // A valid API response that lacks product data is authoritative;
+          // do not burn time trying several more reader variants.
+          if(data&&('status' in data || data.result))break;
+        }catch(err){networkErrors++;}
+      }
+    }
+
+    // Direct browser API calls remain the fastest route when the page is
+    // hosted from http:// or https:// and the API permits that origin.
+    for(const target of [...v3,...v2,v0]){
+      try{
+        const data=await this.fetchJsonWithTimeout(target,4500);
+        if(isFound(data))return parseOffProduct(data.product,code);
+        if(isMissing(data))foundButMissing=true;
+      }catch(err){networkErrors++;}
+    }
+
+    // Third-party CORS routes are a last resort, not the primary path.
+    const proxyTargets=[...v3,...v2];
+    const proxyBases=[
+      'https://api.allorigins.win/raw?url=',
+      'https://corsproxy.io/?url='
+    ];
+    for(const target of proxyTargets){
+      for(const base of proxyBases){
+        try{
+          const data=await this.fetchJsonWithTimeout(base+encodeURIComponent(target),6000);
+          if(isFound(data))return parseOffProduct(data.product,code);
+          if(isMissing(data))foundButMissing=true;
+        }catch(err){networkErrors++;}
+      }
+    }
+
+    if(foundButMissing)throw new Error('Open Food Facts has no product record for barcode '+code);
+    throw new Error(networkErrors?'All Open Food Facts API routes were blocked or unreachable from this browser':'Open Food Facts returned no usable product data');
+  },
+  async lookup(barcode){
+    barcode=String(barcode).replace(/[^0-9]/g,'');
+    if(!barcode){this.setStatus('Enter a barcode number first.',true);return;}
+    this.setStatus('Looking up '+barcode+'…');
+    log(LogLevel.INFO,'Barcode lookup',{barcode});
+    let result=await this.tryLocalBackend(barcode);
+    if(!result){
+      try{result=await this.tryOpenFoodFacts(barcode);}
+      catch(err){
+        const msg=/no product data/i.test(err.message)
+          ?'No product data returned for '+normalizeBarcode(barcode)+'. You can open the product page below and retry.'
+          :'Automatic lookup could not read the Open Food Facts API ('+err.message+'). The product page can still open normally because opening a page and reading an API response are different browser permissions. Retry below.';
+        this.setStatus(msg,true);
+        this.renderNoMatch(barcode);
+        return;
+      }
+    }
+    this.lastResult=result;
+    if(typeof App!=='undefined'&&App.saveScannedMyFood){
+      const saved=App.saveScannedMyFood(result);
+      if(saved)result._myFoodKey=saved.key;
+    }
+    this.setStatus('');
+    this.renderResult(result);
+  },
+  renderNoMatch(barcode){
+    const code=normalizeBarcode(barcode)||barcode;
+    $('scan-result').innerHTML='<div class="scan-result-card">'+
+      '<div class="scan-result-name">Automatic lookup did not return nutrition data</div>'+
+      '<div class="scan-result-brand">The product page may still exist even when an API route is blocked or incomplete.</div>'+
+      '<div class="row" style="margin-top:.75rem;">'+
+      '<button class="btn secondary" id="scan-retry-btn">Retry lookup</button>'+
+      '<a class="btn secondary" target="_blank" rel="noopener" href="https://world.openfoodfacts.org/product/'+esc(code)+'">Open '+esc(code)+' on Open Food Facts &rarr;</a>'+
+      '</div></div>';
+    const retry=$('scan-retry-btn');
+    if(retry)retry.addEventListener('click',()=>this.lookup(code));
+  },
+  renderResult(r){
+    const sourceLabel=r.source==='fatsecret'?'FatSecret':(r.source==='openfoodfacts'?'Open Food Facts':esc(r.source));
+    let html='<div class="scan-result-card">';
+    html+='<div class="scan-result-name">'+esc(r.name)+'</div>';
+    if(r.brand)html+='<div class="scan-result-brand">'+esc(r.brand)+'</div>';
+    html+='<span class="scan-source-tag">'+sourceLabel+'</span>';
+    html+='<div class="scan-kcal">'+Math.round(r.kcal)+' <small>kcal per '+esc(r.serving)+'</small></div>';
+    html+='<div class="scan-macros">P:'+r.protein+'g &nbsp; C:'+r.carb+'g &nbsp; F:'+r.fat+'g'+(r.fiber?' &nbsp; Fiber:'+r.fiber+'g':'')+(r.sodium?' &nbsp; Na:'+Math.round(r.sodium)+'mg':'')+'</div>';
+    if(r.servingBasis&&r.servingBasis.indexOf('serving (as provided')!==0){
+      html+='<div class="scan-basis-note">Basis: '+esc(r.servingBasis)+'</div>';
+    }
+    html+='<div class="note" style="margin-top:.45rem;color:var(--accent);">Saved to My Foods automatically. Set its price/DIAAS in Foods &amp; Exclusions to make it available to the optimizer.</div>';
+    html+='<div class="row" style="margin-top:.75rem;">'+
+      '<select id="scan-log-meal">'+LEDGER_MEALS.map(([k,l])=>'<option value="'+k+'">'+l+'</option>').join('')+'</select>'+
+      '<button class="btn secondary" id="scan-log-btn">Log to today’s ledger</button></div>';
+    html+='</div>';
+    $('scan-result').innerHTML=html;
+    const btn=$('scan-log-btn');
+    if(btn)btn.addEventListener('click',()=>{
+      App.addLedgerEntry({name:r.name,kcal:r.kcal,protein:r.protein,carb:r.carb,fat:r.fat,sodium:r.sodium||0,
+        meal:$('scan-log-meal').value,servingLabel:'1× '+r.serving,foodKey:r._myFoodKey||null});
+      toast('Logged '+r.name+' to today’s ledger.');
+    });
+  }
+};
+
+/* ---------- store links ---------- */
+const Stores={
+  query(f){return f.name.split('(')[0].trim();},
+  walmart(f){return 'https://www.walmart.com/search?q='+encodeURIComponent(this.query(f));},
+  kroger(f){return 'https://www.kroger.com/search?query='+encodeURIComponent(this.query(f));},
+  locator(store,zip){
+    const name=store==='kroger'?'Kroger':'Walmart';
+    return 'https://www.google.com/maps/search/'+encodeURIComponent(name+' grocery store near '+(zip||'me'));
+  }
+};
+
+/* ---------- v4.0: Ledger store (daily log + weights) ----------
+   Entries snapshot per-serving macros/price at add time so later
+   price-book edits never rewrite history. Keys use LOCAL dates
+   (not UTC) so "today" stays today in every timezone. ---------- */
+function localDayKey(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+const LogStore={
+  load(){try{return JSON.parse(localStorage.getItem('costmin.log'))||{};}catch(e){return {};}},
+  save(d){try{localStorage.setItem('costmin.log',JSON.stringify(d));}catch(e){log(LogLevel.WARN,'Could not save day log');}},
+  weights(){try{return JSON.parse(localStorage.getItem('costmin.weights'))||{};}catch(e){return {};}},
+  saveWeights(w){try{localStorage.setItem('costmin.weights',JSON.stringify(w));}catch(e){log(LogLevel.WARN,'Could not save weights');}}
+};
+
+/* ---------- v6.0: persistent My Foods + water ---------- */
+const MyFoodStore={
+  key:'costmin.myfoods',
+  load(){
+    try{
+      const raw=JSON.parse(localStorage.getItem(this.key)||'[]');
+      if(!Array.isArray(raw))return [];
+      return raw.filter(x=>x&&x.id&&x.name).map(x=>this.normalize(x));
+    }catch(e){return [];}
+  },
+  save(list){
+    try{localStorage.setItem(this.key,JSON.stringify(list||[]));return true;}
+    catch(e){log(LogLevel.WARN,'Could not save My Foods');return false;}
+  },
+  normalize(x){
+    const n=v=>{const z=parseFloat(v);return Number.isFinite(z)?z:0;};
+    const id=String(x.id||('mf'+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36)));
+    return {
+      id,key:String(x.key||('myfood-'+id)),name:String(x.name||'My Food').trim()||'My Food',
+      brand:String(x.brand||''),barcode:String(x.barcode||''),source:String(x.source||'custom'),
+      serving_g:Math.max(1,n(x.serving_g||100)),servingLabel:String(x.servingLabel||''),
+      kcal:Math.max(0,n(x.kcal)),protein:Math.max(0,n(x.protein)),carb:Math.max(0,n(x.carb)),
+      fat:Math.max(0,n(x.fat)),fiber:Math.max(0,n(x.fiber)),
+      sodium:Math.max(0,n(x.sodium)),calcium:Math.max(0,n(x.calcium)),iron:Math.max(0,n(x.iron)),
+      vitc:Math.max(0,n(x.vitc)),potassium:Math.max(0,n(x.potassium)),b12:Math.max(0,n(x.b12)),
+      price:Math.max(0,n(x.price)),diaas:Math.min(1.2,Math.max(0,n(x.diaas))),
+      useInOptimizer:!!x.useInOptimizer
+    };
+  },
+  upsert(raw){
+    const list=this.load();
+    const barcode=String(raw.barcode||'').replace(/\D/g,'');
+    const nameKey=String(raw.name||'').trim().toLowerCase();
+    let idx=-1;
+    if(barcode)idx=list.findIndex(x=>String(x.barcode||'').replace(/\D/g,'')===barcode);
+    if(idx<0&&nameKey)idx=list.findIndex(x=>!x.barcode&&x.name.trim().toLowerCase()===nameKey);
+    const prior=idx>=0?list[idx]:null;
+    const rec=this.normalize({
+      ...(prior||{}),...raw,
+      id:prior?.id||('mf'+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36)),
+      key:prior?.key||raw.key
+    });
+    if(prior&&!Object.prototype.hasOwnProperty.call(raw,'useInOptimizer'))rec.useInOptimizer=prior.useInOptimizer;
+    if(idx>=0)list[idx]=rec;else list.push(rec);
+    this.save(list);
+    return rec;
+  },
+  find(id){return this.load().find(x=>x.id===String(id))||null;},
+  findByKey(key){return this.load().find(x=>x.key===String(key))||null;},
+  update(id,patch){
+    const list=this.load();const idx=list.findIndex(x=>x.id===String(id));if(idx<0)return null;
+    list[idx]=this.normalize({...list[idx],...patch});
+    this.save(list);return list[idx];
+  },
+  remove(id){
+    const list=this.load().filter(x=>x.id!==String(id));
+    this.save(list);return list;
+  }
+};
+
+function myFoodToFood(x){
+  return {
+    name:x.name,serving_g:x.serving_g,kcal:x.kcal,protein:x.protein,carb:x.carb,fat:x.fat,fiber:x.fiber,
+    defaultPrice:x.price,price:x.price,diaas:x.diaas,store:'My Foods',category:'custom',
+    sodium:x.sodium,calcium:x.calcium,iron:x.iron,vitc:x.vitc,potassium:x.potassium,b12:x.b12,
+    key:x.key,isMyFood:true,myFoodId:x.id,source:x.source,brand:x.brand,barcode:x.barcode,
+    effectiveProtein:x.protein*x.diaas,maxDailyServings:6,
+    get costPerEffProt(){return this.effectiveProtein>0?this.price/this.effectiveProtein:Infinity;}
+  };
+}
+
+function rebuildOptimizerFoodPool(){
+  for(let i=FOODS.length-1;i>=0;i--){if(FOODS[i].isMyFood)FOODS.splice(i,1);}
+  const my=MyFoodStore.load();
+  my.filter(x=>x.useInOptimizer&&x.price>0&&x.kcal>0&&x.diaas>=0&&x.diaas<=1.2).forEach(x=>FOODS.push(myFoodToFood(x)));
+  FOODS.sort((a,b)=>a.costPerEffProt-b.costPerEffProt);
+  FOODS.forEach((f,i)=>f.id=i);
+}
+function getAllLedgerFoods(){
+  const out=[],seen=new Set();
+  FOODS.forEach(f=>{if(!seen.has(f.key)){seen.add(f.key);out.push(f);}});
+  MyFoodStore.load().forEach(x=>{
+    if(!seen.has(x.key)){seen.add(x.key);out.push(myFoodToFood(x));}
+  });
+  return out;
+}
+
+/* ---------- v6.0: water store ---------- */
+const WaterStore={
+  key:'costmin.water',
+  goalKey:'costmin.water.goal',
+  load(){
+    try{
+      const o=JSON.parse(localStorage.getItem(this.key)||'{}');
+      return o&&typeof o==='object'?o:{};
+    }catch(e){return {};}
+  },
+  save(o){try{localStorage.setItem(this.key,JSON.stringify(o||{}));return true;}catch(e){return false;}},
+  get(date){const v=parseFloat(this.load()[date]);return Number.isFinite(v)&&v>0?v:0;},
+  set(date,oz){
+    const o=this.load();const v=Math.max(0,Math.min(2000,parseFloat(oz)||0));
+    if(v>0)o[date]=Math.round(v*4)/4;else delete o[date];
+    this.save(o);return v;
+  },
+  add(date,oz){return this.set(date,this.get(date)+(parseFloat(oz)||0));},
+  clear(date){const o=this.load();delete o[date];this.save(o);},
+  goal(){
+    try{
+      const v=parseFloat(localStorage.getItem(this.goalKey));
+      return Number.isFinite(v)&&v>=8&&v<=500?v:96;
+    }catch(e){return 96;}
+  },
+  setGoal(oz){
+    const v=Math.max(8,Math.min(500,parseFloat(oz)||96));
+    try{localStorage.setItem(this.goalKey,String(Math.round(v)));}catch(e){}
+    return Math.round(v);
+  }
+};
+
+function entriesTotals(entries){
+  const t={kcal:0,p:0,c:0,f:0,sodium:0,cost:0};
+  (entries||[]).forEach(e=>{
+    if(!e||!e.per)return;
+    t.kcal+=(e.per.kcal||0)*e.servings;t.p+=(e.per.p||0)*e.servings;
+    t.c+=(e.per.c||0)*e.servings;t.f+=(e.per.f||0)*e.servings;
+    t.sodium+=(e.per.sodium||0)*e.servings;t.cost+=(e.per.cost||0)*e.servings;
+  });
+  return t;
+}
+
+/* ---------- app controller ---------- */
+const App={
+  state:{specs:null,targets:null,result:null,training:null,ladder:null,
+    excluded:new Set(),pinned:new Set(),zip:'',store:'walmart',mode:'balanced',logDate:null},
+
+  init(){
+    this.loadPersisted();
+    this.bindEvents();
+    this.updateModeNote();
+    this.runSelfTests();
+    this.renderFoods();
+    this.renderMyFoods();
+    if(!this.state.logDate)this.state.logDate=localDayKey(new Date());
+    if($('log-date'))$('log-date').value=this.state.logDate;
+    if($('water-goal'))$('water-goal').value=WaterStore.goal();
+    this.populateLedgerFoods();
+    this.renderLedger();
+    this.handleSubmit(false);
+  },
+
+  loadPersisted(){
+    try{
+      this.state.zip=localStorage.getItem('costmin.zip')||'';
+      this.state.store=localStorage.getItem('costmin.store')||'walmart';
+      this.state.mode=localStorage.getItem('costmin.mode')||'balanced';
+      $('budget-mode').value=this.state.mode;
+      rebuildOptimizerFoodPool();
+      const myFoodCount=MyFoodStore.load().length;
+      if(myFoodCount)log(LogLevel.INFO,'Restored My Foods',{count:myFoodCount});
+      JSON.parse(localStorage.getItem('costmin.excluded')||'[]')
+        .forEach(k=>{if(FOODS.some(f=>f.key===k))this.state.excluded.add(k);});
+      JSON.parse(localStorage.getItem('costmin.pinned')||'[]')
+        .forEach(k=>{if(FOODS.some(f=>f.key===k))this.state.pinned.add(k);});
+      PriceManager.load();
+      $('zip').value=this.state.zip;
+      $('store').value=this.state.store;
+      if(this.state.excluded.size)log(LogLevel.INFO,'Restored exclusions',[...this.state.excluded]);
+      if(this.state.pinned.size)log(LogLevel.INFO,'Restored pinned foods',[...this.state.pinned]);
+      if(PriceManager.count())log(LogLevel.INFO,'Restored custom prices',{count:PriceManager.count(),zip:this.state.zip||'(none)'});
+    }catch(e){log(LogLevel.WARN,'localStorage unavailable — price edits will not persist');}
+  },
+
+  bindEvents(){
+    $('spec-form').addEventListener('submit',e=>{e.preventDefault();this.handleSubmit();});
+    document.querySelector('.tabs').addEventListener('click',e=>{
+      const t=e.target.closest('.tab');
+      if(t)this.switchTab(t.dataset.tab);
+    });
+    $('wisdom-link').addEventListener('click',e=>{e.preventDefault();this.showWisdom();});
+    $('wisdom-close').addEventListener('click',()=>$('wisdom-modal').hidden=true);
+    $('wisdom-modal').addEventListener('click',e=>{if(e.target.id==='wisdom-modal')$('wisdom-modal').hidden=true;});
+    $('budget-mode').addEventListener('change',()=>{
+      this.state.mode=$('budget-mode').value;
+      try{localStorage.setItem('costmin.mode',this.state.mode);}catch(e){}
+      this.updateModeNote();
+      if(this.state.specs)this.rerun();
+    });
+    this.bindLedgerEvents();
+    this.bindScanEvents();
+    document.addEventListener('click',e=>this.onDocClick(e));
+    document.addEventListener('change',e=>{
+      const inp=e.target.closest('[data-price]');
+      if(inp){this.setPrice(inp.dataset.price,parseFloat(inp.value));return;}
+      const mf=e.target.closest('[data-myfood-field]');
+      if(mf)this.updateMyFoodField(mf.dataset.myfoodId,mf.dataset.myfoodField,mf.type==='checkbox'?mf.checked:parseFloat(mf.value));
+    });
+    const search=$('log-food-search');
+    if(search)search.addEventListener('input',()=>this.populateLedgerFoods(search.value));
+
+  },
+
+  /* ---- Ledger events ---- */
+  bindLedgerEvents(){
+    $('log-date').addEventListener('change',()=>{
+      this.state.logDate=$('log-date').value||localDayKey(new Date());
+      this.renderLedger();
+    });
+    $('log-prev').addEventListener('click',()=>this.shiftDay(-1));
+    $('log-next').addEventListener('click',()=>this.shiftDay(1));
+    $('log-import').addEventListener('click',()=>this.importPlanToLedger());
+    $('log-clear').addEventListener('click',()=>{
+      this.saveLedgerEntries([]);
+      toast('Day cleared.');
+      this.renderLedger();
+    });
+    $('log-add-btn').addEventListener('click',()=>this.addFoodEntry());
+    $('log-custom-btn').addEventListener('click',()=>this.addCustomEntry());
+    $('weight-add').addEventListener('click',()=>this.addWeight());
+
+    if($('water-goal'))$('water-goal').addEventListener('change',()=>{
+      const goal=WaterStore.setGoal($('water-goal').value);
+      $('water-goal').value=goal;
+      this.renderWater();
+      toast('Water goal saved: '+goal+' oz/day');
+    });
+    if($('water-input'))$('water-input').addEventListener('keydown',e=>{
+      if(e.key==='Enter'){e.preventDefault();this.addWater(parseFloat(e.target.value));}
+    });
+    $('water-add-btn').addEventListener('click',()=>this.addWater(parseFloat($('water-input').value)));
+    $('water-clear-btn').addEventListener('click',()=>{
+      WaterStore.clear(this.state.logDate);
+      $('water-input').value='';
+      this.renderWater();
+      toast('Water cleared for '+this.state.logDate+'.');
+    });
+
+    $('weight-use').addEventListener('click',()=>{
+      const w=LogStore.weights();
+      const keys=Object.keys(w).sort();
+      if(!keys.length){toast('No weights logged yet.');return;}
+      const latest=w[keys[keys.length-1]];
+      $('weight-lb').value=latest;
+      toast('Current weight set to '+latest+' lb — hit Compute Optimal Plan to re-optimize.');
+    });
+  },
+
+  /* ---- Scan events ---- */
+  bindScanEvents(){
+    const startBtn=$('scan-start-btn'),stopBtn=$('scan-stop-btn'),manualBtn=$('scan-manual-btn'),manualInp=$('scan-manual');
+    if(!startBtn)return; // panel not present (shouldn't happen, but keep init robust)
+    startBtn.addEventListener('click',()=>Scanner.startCamera());
+    stopBtn.addEventListener('click',()=>{Scanner.stopCamera();Scanner.setStatus('');});
+    manualBtn.addEventListener('click',()=>Scanner.lookup(manualInp.value));
+    manualInp.addEventListener('keydown',e=>{if(e.key==='Enter')Scanner.lookup(manualInp.value);});
+  },
+
+  populateLedgerFoods(query=''){
+    const sel=$('log-add-food');if(!sel)return;
+    const q=String(query||'').trim().toLowerCase();
+    const all=getAllLedgerFoods().filter(f=>{
+      if(!q)return true;
+      return (f.name+' '+(f.brand||'')+' '+(f.category||'')+' '+(f.barcode||'')).toLowerCase().includes(q);
+    });
+    const base=all.filter(f=>!f.isMyFood).sort((a,b)=>a.name.localeCompare(b.name));
+    const mine=all.filter(f=>f.isMyFood).sort((a,b)=>a.name.localeCompare(b.name));
+    let html='<option value="">Select a food…</option>';
+    if(base.length){
+      html+='<optgroup label="Food database">';
+      html+=base.map(f=>'<option value="'+esc(f.key)+'">'+esc(f.name)+' — '+fmt$(f.price)+'/srv</option>').join('');
+      html+='</optgroup>';
+    }
+    if(mine.length){
+      html+='<optgroup label="My Foods">';
+      html+=mine.map(f=>'<option value="'+esc(f.key)+'">'+esc(f.name)+' — '+(f.price>0?fmt$(f.price)+'/srv':'price not set')+'</option>').join('');
+      html+='</optgroup>';
+    }
+    if(!base.length&&!mine.length)html+='<option value="" disabled>No foods match "'+esc(query||'')+'"</option>';
+    sel.innerHTML=html;
+  },
+
+  renderMyFoods(){
+    const el=$('my-food-list');if(!el)return;
+    const foods=MyFoodStore.load().sort((a,b)=>a.name.localeCompare(b.name));
+    if(!foods.length){
+      el.innerHTML='<p class="note" style="margin:0;">No My Foods saved yet. Add a custom food or scan a barcode and it will appear here.</p>';
+      return;
+    }
+    el.innerHTML=foods.map(f=>{
+      const source=f.barcode?('barcode '+esc(f.barcode)):(f.source==='custom'?'typed custom':'saved');
+      const optStatus=f.useInOptimizer
+        ?'<span style="color:var(--accent);">optimizer ON</span>'
+        :'<span style="color:var(--muted);">ledger only</span>';
+      const priceVal=f.price>0?f.price.toFixed(2):'0';
+      const diaasVal=f.diaas>0?f.diaas.toFixed(2):'0';
+      return '<div class="myfood-row">'+
+        '<div class="myfood-main">'+
+          '<div class="myfood-name" title="'+esc(f.name)+'">'+esc(f.name)+(f.brand?' · '+esc(f.brand):'')+'</div>'+
+          '<div class="myfood-meta">'+Math.round(f.kcal)+' kcal · P'+f.protein+' C'+f.carb+' F'+f.fat+' · '+Math.round(f.sodium)+'mg Na · '+f.serving_g+'g serving · '+source+' · '+optStatus+'</div>'+
+        '</div>'+
+        '<div class="myfood-actions">'+
+          '<button class="mini-btn" data-myfood-load="'+esc(f.id)+'">load</button>'+
+          '<label>$ /srv <input type="number" min="0" max="500" step="0.01" value="'+priceVal+'" data-myfood-field="price" data-myfood-id="'+esc(f.id)+'"></label>'+
+          '<label>DIAAS <input type="number" min="0" max="1.2" step="0.01" value="'+diaasVal+'" data-myfood-field="diaas" data-myfood-id="'+esc(f.id)+'"></label>'+
+          '<label><input type="checkbox" '+(f.useInOptimizer?'checked ':'')+'data-myfood-field="useInOptimizer" data-myfood-id="'+esc(f.id)+'"> optimizer</label>'+
+          '<button class="mini-btn" data-myfood-del="'+esc(f.id)+'">delete</button>'+
+        '</div></div>';
+    }).join('');
+  },
+
+  loadMyFoodIntoForm(id){
+    const f=MyFoodStore.find(id);if(!f)return;
+    $('log-custom-name').value=f.name;
+    $('log-custom-kcal').value=f.kcal;
+    $('log-custom-p').value=f.protein;
+    $('log-custom-c').value=f.carb;
+    $('log-custom-f').value=f.fat;
+    $('log-custom-na').value=f.sodium;
+    $('log-custom-serving').value=f.serving_g;
+    $('log-custom-fiber').value=f.fiber;
+    $('log-custom-price').value=f.price;
+    $('log-custom-diaas').value=f.diaas;
+    $('log-custom-optimizer').checked=!!f.useInOptimizer;
+    toast('Loaded '+f.name+' into the custom-food form. Edit it and press Save + Log.');
+  },
+
+  updateMyFoodField(id,field,value){
+    const f=MyFoodStore.find(id);if(!f)return;
+    let patch={};
+    if(field==='useInOptimizer'){
+      const on=!!value;
+      if(on&&!(f.price>0)){toast('Set a price per serving before enabling this food in the optimizer.');this.renderMyFoods();return;}
+      if(on&&f.protein>0&&!(f.diaas>0)){toast('Set a DIAAS above 0 before enabling a protein-containing food in the optimizer.');this.renderMyFoods();return;}
+      patch={useInOptimizer:on};
+    }else if(field==='price'){
+      if(!Number.isFinite(value)||value<0||value>500){toast('Enter a price from $0 to $500 per serving.');this.renderMyFoods();return;}
+      patch={price:Math.round(value*100)/100};
+      if(f.useInOptimizer&&patch.price<=0)patch.useInOptimizer=false;
+    }else if(field==='diaas'){
+      if(!Number.isFinite(value)||value<0||value>1.2){toast('DIAAS must be 0–1.2.');this.renderMyFoods();return;}
+      patch={diaas:Math.round(value*100)/100};
+      if(f.useInOptimizer&&f.protein>0&&patch.diaas<=0)patch.useInOptimizer=false;
+    }else return;
+    const updated=MyFoodStore.update(id,patch);
+    if(!updated)return;
+    rebuildOptimizerFoodPool();
+    persistExcluded();persistPinned();
+    this.populateLedgerFoods($('log-food-search')?.value||'');
+    this.renderMyFoods();
+    this.renderFoods();
+    if(this.state.specs)this.rerun();
+    else this.renderShopping();
+  },
+
+  deleteMyFood(id){
+    const f=MyFoodStore.find(id);if(!f)return;
+    MyFoodStore.remove(id);
+    this.state.excluded.delete(f.key);this.state.pinned.delete(f.key);
+    rebuildOptimizerFoodPool();persistExcluded();persistPinned();
+    this.populateLedgerFoods($('log-food-search')?.value||'');
+    this.renderMyFoods();
+    this.renderFoods();
+    if(this.state.specs)this.rerun();else this.renderShopping();
+    toast('Deleted '+f.name+' from My Foods.');
+  },
+
+  saveScannedMyFood(r){
+    if(!r||!r.name)return null;
+    const saved=MyFoodStore.upsert({
+      name:r.name,brand:r.brand||'',barcode:r.barcode||'',source:r.source||'scan',
+      serving_g:r.grams||100,servingLabel:r.serving||'',
+      kcal:r.kcal,protein:r.protein,carb:r.carb,fat:r.fat,fiber:r.fiber||0,
+      sodium:r.sodium||0,calcium:r.calcium||0,iron:r.iron||0,vitc:r.vitc||0,
+      potassium:r.potassium||0,b12:r.b12||0
+    });
+    rebuildOptimizerFoodPool();
+    this.populateLedgerFoods($('log-food-search')?.value||'');
+    this.renderMyFoods();
+    this.renderFoods();
+    log(LogLevel.INFO,'Saved scanned product to My Foods',{name:saved.name,barcode:saved.barcode});
+    return saved;
+  },
+
+  addWater(amount){
+    const v=parseFloat(amount);
+    if(!Number.isFinite(v)||v<=0||v>200){toast('Enter water from 1–200 oz.');return;}
+    const total=WaterStore.add(this.state.logDate,v);
+    $('water-input').value='';
+    this.renderWater();
+    toast('Water logged: +'+Math.round(v)+' oz · total '+Math.round(total)+' oz');
+  },
+
+  renderWater(){
+    const el=$('water-bar');if(!el)return;
+    const date=this.state.logDate||localDayKey(new Date());
+    const val=WaterStore.get(date),goal=WaterStore.goal();
+    const pct=Math.min(100,Math.max(0,100*val/goal));
+    const cls=val>goal?'warn':'';
+    el.innerHTML='<div class="tg-row"><span class="tg-name">Water</span>'+
+      '<div class="tg-track"><div class="tg-fill '+cls+'" style="width:'+pct.toFixed(1)+'%"></div></div>'+
+      '<span class="tg-val">'+Math.round(val)+' / '+Math.round(goal)+' oz</span></div>';
+  },
+  ledgerEntries(){return LogStore.load()[this.state.logDate]||[];},
+  saveLedgerEntries(entries){
+    const all=LogStore.load();
+    if(entries.length)all[this.state.logDate]=entries;
+    else delete all[this.state.logDate];
+    LogStore.save(all);
+  },
+  newEntryId(){return 'e'+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);},
+
+  shiftDay(n){
+    const base=this.state.logDate||localDayKey(new Date());
+    const d=new Date(base+'T12:00:00');
+    if(isNaN(d.getTime()))return;
+    d.setDate(d.getDate()+n);
+    this.state.logDate=localDayKey(d);
+    $('log-date').value=this.state.logDate;
+    this.renderLedger();
+  },
+
+  importPlanToLedger(){
+    const r=this.state.result;
+    if(!r){toast('Run a plan first — nothing to import.');return;}
+    const es=this.ledgerEntries();
+    // Map each food position to the ledger bucket matching where the optimizer put it
+    // (Breakfast/Lunch/Dinner map directly; Brunch/Snack/etc. all fall into "snacks").
+    const mealOf={};
+    const names=MEAL_NAMES[r.mealPlan.length]||[];
+    r.mealPlan.forEach((m,mi)=>{
+      const bucket=ledgerBucketForMealName(names[mi]||'');
+      m.foods.forEach(g=>{mealOf[g.pos]=bucket;});
+    });
+    let added=0,skipped=0;
+    r.servings.forEach((v,i)=>{
+      if(v<MealOptimizer.MIN_SERVE)return;
+      const f=FOODS[i];
+      if(es.some(x=>x.foodKey===f.key)){skipped++;return;}
+      es.push({id:this.newEntryId(),name:f.name,foodKey:f.key,meal:mealOf[i]||'snacks',
+        servings:Math.round(v*4)/4,
+        per:{kcal:f.kcal,p:f.protein,c:f.carb,f:f.fat,sodium:f.sodium,cost:f.price}});
+      added++;
+    });
+    this.saveLedgerEntries(es);
+    toast(added?('Imported '+added+' plan food'+(added>1?'s':'')+(skipped?' ('+skipped+' already logged)':'')+'.'):'All plan foods are already logged.');
+    this.renderLedger();
+  },
+
+  addFoodEntry(){
+    const sel=$('log-add-food');
+    const f=getAllLedgerFoods().find(x=>x.key===sel.value);
+    if(!f){toast('Pick a food first.');return;}
+    const serv=parseFloat($('log-add-serv').value)||1;
+    if(serv<=0||serv>50){toast('Servings must be 0–50.');return;}
+    const meal=($('log-add-meal')&&$('log-add-meal').value)||'snacks';
+    const es=this.ledgerEntries();
+    const ex=es.find(x=>x.foodKey===f.key&&x.meal===meal);
+    if(ex){
+      ex.servings=Math.round((ex.servings+serv)*4)/4;
+      toast(f.name+' → '+ex.servings.toFixed(2)+' servings');
+    }else{
+      es.push({id:this.newEntryId(),name:f.name,foodKey:f.key,meal,
+        servings:Math.round(serv*4)/4,
+        per:{kcal:f.kcal,p:f.protein,c:f.carb,f:f.fat,sodium:f.sodium,cost:f.price}});
+      toast('Logged: '+f.name);
+    }
+    this.saveLedgerEntries(es);
+    this.renderLedger();
+  },
+
+  /* Shared path for both the custom-food form and the Scan tab's "log to ledger" button,
+     so a scanned product and a hand-typed custom food behave identically. */
+  addLedgerEntry({name,kcal,protein,carb,fat,sodium,meal,foodKey,servingLabel,cost}){
+    const es=this.ledgerEntries();
+    es.push({id:this.newEntryId(),name,foodKey:foodKey||null,meal:meal||'snacks',servings:1,
+      servingLabel:servingLabel||null,
+      per:{kcal:kcal||0,p:protein||0,c:carb||0,f:fat||0,sodium:sodium||0,cost:cost||0}});
+    this.saveLedgerEntries(es);
+    this.renderLedger();
+  },
+
+  addCustomEntry(){
+    const name=$('log-custom-name').value.trim()||'Custom food';
+    const kcal=parseFloat($('log-custom-kcal').value);
+    if(!Number.isFinite(kcal)||kcal<=0||kcal>3000){toast('Enter valid calories (1–3000).');return;}
+    const num=(id,max)=>{const v=parseFloat($(id).value);return Number.isFinite(v)&&v>=0&&v<=max?v:0;};
+    const meal=($('log-custom-meal')&&$('log-custom-meal').value)||'snacks';
+    const protein=num('log-custom-p',200),carb=num('log-custom-c',300),
+          fat=num('log-custom-f',200),sodium=num('log-custom-na',5000);
+    const serving_g=Math.max(1,num('log-custom-serving',5000)||100);
+    const fiber=num('log-custom-fiber',300);
+    const price=num('log-custom-price',500);
+    const diaas=num('log-custom-diaas',1.2);
+    const wantsOptimizer=!!$('log-custom-optimizer').checked;
+    if(wantsOptimizer&&price<=0){toast('Food saved, but optimizer is OFF until you set a price per serving.');}
+    else if(wantsOptimizer&&protein>0&&diaas<=0){toast('Food saved, but optimizer is OFF until you set a DIAAS above 0.');}
+
+    const saved=MyFoodStore.upsert({
+      name,kcal,protein,carb,fat,sodium,serving_g,fiber,price,diaas,
+      source:'custom',useInOptimizer:wantsOptimizer&&(price>0)&&(protein<=0||diaas>0),
+      servingLabel:'1× '+serving_g+' g'
+    });
+    rebuildOptimizerFoodPool();
+    this.populateLedgerFoods($('log-food-search')?.value||'');
+    this.renderMyFoods();
+    this.renderFoods();
+
+    this.addLedgerEntry({
+      name:saved.name,kcal:saved.kcal,protein:saved.protein,carb:saved.carb,fat:saved.fat,sodium:saved.sodium,
+      meal,foodKey:saved.key,servingLabel:'1× '+saved.serving_g+' g',cost:saved.price
+    });
+
+    ['log-custom-name','log-custom-kcal','log-custom-p','log-custom-c','log-custom-f','log-custom-na'].forEach(id=>$(id).value='');
+    $('log-custom-serving').value='100';
+    $('log-custom-fiber').value='0';
+    $('log-custom-price').value='0';
+    $('log-custom-diaas').value='0';
+    $('log-custom-optimizer').checked=false;
+
+    if(saved.useInOptimizer&&this.state.specs)this.rerun();
+    toast('Saved to My Foods + logged: '+saved.name);
+  },
+
+  bumpEntry(id,delta){
+    const es=this.ledgerEntries();
+    const e=es.find(x=>x.id===id);
+    if(!e)return;
+    const s=Math.round((e.servings+delta)*4)/4;
+    if(s<=0){this.removeEntry(id);return;}
+    e.servings=s;
+    this.saveLedgerEntries(es);
+    this.renderLedger();
+  },
+
+  removeEntry(id){
+    this.saveLedgerEntries(this.ledgerEntries().filter(x=>x.id!==id));
+    this.renderLedger();
+  },
+
+  addWeight(){
+    const v=parseFloat($('weight-input').value);
+    if(!Number.isFinite(v)||v<80||v>700){toast('Enter a valid weight (80–700 lb).');return;}
+    const w=LogStore.weights();
+    w[this.state.logDate]=v;
+    LogStore.saveWeights(w);
+    $('weight-input').value='';
+    toast('Weight logged: '+v+' lb');
+    this.renderLedger();
+  },
+
+  /* ---- Ledger render — plain string building, no template traps ---- */
+  renderLedger(){
+    if(!$('log-entries'))return;
+    const t=this.state.targets,r=this.state.result;
+    this.renderWater();
+    const entries=this.ledgerEntries();
+    const tot=entriesTotals(entries);
+    const fmt=v=>Math.round(v).toLocaleString();
+    const bars=[];
+    const barRow=(name,val,tgt,unit,badWhenOver)=>{
+      if(tgt==null||!tgt){
+        bars.push('<div class="tg-row"><span class="tg-name">'+name+'</span><span class="tg-val" style="grid-column:2/4">run a plan to set targets</span></div>');
+        return;
+      }
+      const pct=Math.max(0,Math.min(100,100*val/tgt));
+      let cls='tg-fill';
+      if(badWhenOver&&val>tgt)cls+=' bad';
+      else if(!badWhenOver&&val<tgt*0.9)cls+=' warn';
+      bars.push('<div class="tg-row"><span class="tg-name">'+name+'</span>'+
+        '<div class="tg-track"><div class="'+cls+'" style="width:'+pct.toFixed(1)+'%"></div></div>'+
+        '<span class="tg-val">'+fmt(val)+' / '+fmt(tgt)+' '+unit+'</span></div>');
+    };
+    barRow('Calories',tot.kcal,t?t.calorieTarget:null,'kcal',true);
+    barRow('Protein',tot.p,r?r.totals.protein:(t?t.proteinTarget:null),'g',false);
+    barRow('Carbs',tot.c,t?t.carbTarget:null,'g',false);
+    barRow('Fat',tot.f,t?t.fatTarget:null,'g',false);
+    barRow('Sodium',tot.sodium,t&&t.micro?t.micro.sodiumMax:null,'mg',true);
+    $('log-bars').innerHTML=bars.join('');
+
+    const grouped=groupEntriesByMeal(entries);
+    $('log-entries').innerHTML=LEDGER_MEALS.map(([key,label])=>{
+      const bucket=grouped[key];
+      const subKcal=bucket.reduce((s,e)=>s+(e.per.kcal||0)*e.servings,0);
+      let body;
+      if(bucket.length===0){
+        body='<div class="lg-row" style="border-bottom:none;"><span class="note" style="margin:0;">Nothing logged yet.</span></div>';
+      }else{
+        body=bucket.map(e=>{
+          const kcal=Math.round((e.per.kcal||0)*e.servings),
+                p=Math.round((e.per.p||0)*e.servings),
+                c=Math.round((e.per.c||0)*e.servings),
+                f=Math.round((e.per.f||0)*e.servings);
+          const cost=(e.per.cost||0)>0?fmt$(e.per.cost*e.servings):'—';
+          const sub=e.servingLabel?esc(e.servingLabel):e.servings.toFixed(2)+' servings';
+          return '<div class="lg-row">'+
+            '<span class="lg-name">'+esc(e.name)+'<em>'+sub+'</em></span>'+
+            '<span class="lg-macros">'+kcal+' kcal · P'+p+' C'+c+' F'+f+'</span>'+
+            '<span class="lg-cost">'+cost+'</span>'+
+            '<span>'+
+              '<button class="mini-btn" data-entry-bump="'+e.id+'" data-delta="-0.25">-</button>'+
+              '<button class="mini-btn" data-entry-bump="'+e.id+'" data-delta="0.25">+</button>'+
+              '<button class="mini-btn" data-entry-del="'+e.id+'">del</button>'+
+            '</span></div>';
+        }).join('');
+      }
+      return '<div class="meal"><div class="meal-header"><span class="meal-title">'+label+'</span>'+
+        '<div class="meal-macros"><span>'+Math.round(subKcal)+' kcal</span></div></div>'+
+        '<div class="meal-body">'+body+'</div></div>';
+    }).join('');
+
+    $('log-dayfoot').innerHTML=entries.length
+      ?(entries.length+' item'+(entries.length>1?'s':'')+' · '+fmt(tot.kcal)+' kcal · '+fmt(tot.p)+'g protein · '+fmt(tot.sodium)+'mg sodium · '+fmt$(tot.cost)+' food cost')
+      :'';
+
+    /* 7-day history */
+    const all=LogStore.load();
+    const todayK=localDayKey(new Date());
+    let rowsH=[];
+    for(let i=6;i>=0;i--){
+      const d=new Date();d.setDate(d.getDate()-i);
+      const k=localDayKey(d);
+      const es=all[k]||[];
+      const tt=entriesTotals(es);
+      rowsH.push('<tr'+(k===todayK?' class="on"':'')+'><td>'+(k===todayK?'today':k.slice(5))+'</td><td>'+Math.round(tt.kcal)+'</td><td>'+Math.round(tt.p)+'</td><td>'+Math.round(WaterStore.get(k))+' oz</td><td>'+es.length+'</td></tr>');
+    }
+    $('log-history').innerHTML=rowsH.join('');
+
+    /* weights */
+    const w=LogStore.weights();
+    const last=Object.keys(w).sort().slice(-5).reverse();
+    $('weights-list').innerHTML=last.length?last.map((k,i)=>{
+      const delta=i<last.length-1?(w[k]-w[last[i+1]]):null;
+      return '<tr><td>'+k+'</td><td>'+w[k].toFixed(1)+' lb</td><td>'+(delta==null?'—':(delta>0?'+':'')+delta.toFixed(1))+'</td></tr>';
+    }).join(''):'<tr><td colspan="3" style="color:var(--muted)">no weights logged</td></tr>';
+  },
+
+  updateModeNote(){
+    const el=$('mode-note');if(el)el.textContent=COST_MODES[this.state.mode].desc;
+  },
+
+  onDocClick(e){
+    let b=e.target.closest('[data-mode]');
+    if(b&&b.dataset.mode!==this.state.mode){this.setMode(b.dataset.mode);return;}
+    b=e.target.closest('[data-entry-del]');
+    if(b){this.removeEntry(b.dataset.entryDel);return;}
+    b=e.target.closest('[data-entry-bump]');
+    if(b){this.bumpEntry(b.dataset.entryBump,parseFloat(b.dataset.delta));return;}
+    b=e.target.closest('[data-swap]');
+    if(b){this.openSwap(b);return;}
+    b=e.target.closest('[data-swap-ok]');
+    if(b){this.confirmSwap(b.closest('.food-item'));return;}
+    b=e.target.closest('[data-swap-cancel]');
+    if(b){this.render();return;}
+    b=e.target.closest('[data-toggle]');
+    if(b){this.toggleExcluded(b.dataset.toggle);return;}
+    b=e.target.closest('[data-pin]');
+    if(b){this.togglePin(b.dataset.pin);return;}
+    b=e.target.closest('[data-chip]');
+    if(b){this.applyChip(b);return;}
+    if(e.target.closest('#reset-exclusions')){this.resetExclusions();return;}
+    if(e.target.closest('#reset-prices')){this.resetPrices();return;}
+    if(e.target.closest('#fetch-prices')){this.fetchPrices();return;}
+    const waterQuick=e.target.closest('[data-water-add]');
+    if(waterQuick){this.addWater(parseFloat(waterQuick.dataset.waterAdd));return;}
+    const mfLoad=e.target.closest('[data-myfood-load]');
+    if(mfLoad){this.loadMyFoodIntoForm(mfLoad.dataset.myfoodLoad);return;}
+    const mfDel=e.target.closest('[data-myfood-del]');
+    if(mfDel){this.deleteMyFood(mfDel.dataset.myfoodDel);return;}
+  },
+
+  setMode(k){
+    this.state.mode=k;
+    $('budget-mode').value=k;
+    try{localStorage.setItem('costmin.mode',k);}catch(e){}
+    this.updateModeNote();
+    log(LogLevel.INFO,'Budget mode switched',{mode:k});
+    this.rerun();
+  },
+
+  readSpecs(){
+    const age=+$('age').value,sex=$('sex').value;
+    const ft=+$('height-ft').value,inch=parseFloat($('height-in').value)||0;
+    const wlb=+$('weight-lb').value,tlb=+$('target-lb').value;
+    const bfRaw=$('bodyfat').value.trim();
+    const bf=bfRaw===''?null:+bfRaw;
+    const pRaw=$('protein-g').value.trim();
+    const proteinG=pRaw===''?null:+pRaw;
+    const zip=$('zip').value.trim(),goal=$('goal').value;
+    const errs=[];
+    if(!Number.isFinite(age)||age<18||age>100)errs.push('Age must be 18–100.');
+    if(!Number.isFinite(ft)||ft<3||ft>8||!Number.isFinite(inch)||inch<0||inch>=12)errs.push('Height must be 3–8 ft plus 0–11.9 in.');
+    if(!Number.isFinite(wlb)||wlb<80||wlb>700)errs.push('Current weight must be 80–700 lb.');
+    if(!Number.isFinite(tlb)||tlb<80||tlb>700)errs.push('Target weight must be 80–700 lb.');
+    if(bf!==null&&(!Number.isFinite(bf)||bf<4||bf>60))errs.push('Body fat must be 4–60% or blank.');
+    if(proteinG!==null&&(!Number.isFinite(proteinG)||proteinG<60||proteinG>350))errs.push('Protein override must be 60–350 g or blank.');
+    if(zip&&!/^\d{5}$/.test(zip))errs.push('ZIP code must be 5 digits or blank.');
+    if(goal==='fatloss'&&tlb>=wlb)errs.push('For fat loss the target weight must be below your current weight.');
+    if(errs.length)return {error:errs.join(' ')};
+    return {specs:{age,sex,ft,inch,heightCm:U.ftInToCm(ft,inch),weightKg:U.lbsToKg(wlb),weightLb:wlb,
+      targetKg:U.lbsToKg(tlb),targetLb:tlb,bodyfat:bf,proteinG,activity:$('activity').value,goal,
+      meals:+$('meals').value,zip,store:$('store').value,mode:$('budget-mode').value}};
+  },
+
+  handleSubmit(userInitiated=true){
+    const {specs,error}=this.readSpecs();
+    const errEl=$('form-error');
+    if(error){errEl.textContent=error;errEl.classList.add('show');return;}
+    errEl.classList.remove('show');
+    if(specs.zip!==this.state.zip){
+      FOODS.forEach(f=>f.price=f.defaultPrice);
+      this.state.zip=specs.zip;
+      try{localStorage.setItem('costmin.zip',specs.zip);}catch(e){}
+      PriceManager.load();
+      toast(specs.zip?`Switched to price profile for ZIP ${specs.zip}`:'Switched to default price profile');
+    }
+    this.state.store=specs.store;
+    this.state.mode=specs.mode;
+    try{localStorage.setItem('costmin.store',specs.store);}catch(e){}
+    this.state.specs=specs;
+    log(LogLevel.INFO,'Specs',specs);
+    this.rerun();
+    if(userInitiated)this.switchTab('plan');
+  },
+
+  rerun(){
+    if(!this.state.specs){this.renderFoods();return;}
+    const targets=MetabolicEngine.computeTargets(this.state.specs);
+    this.state.targets=targets;
+    this.state.result=MealOptimizer.optimize(targets,this.state.excluded,this.state.pinned,this.state.mode);
+    this.state.training=TrainingEngine.compute(this.state.specs,targets);
+    const ladder={};
+    for(const k of Object.keys(COST_MODES)){
+      ladder[k]=(k===this.state.mode&&this.state.result)?this.state.result.cost
+        :MealOptimizer.ladderCost(targets,this.state.excluded,this.state.pinned,k);
+    }
+    this.state.ladder=ladder;
+    log(LogLevel.INFO,'Cost ladder',{cheap:ladder.cheap!=null?+ladder.cheap.toFixed(2):'n/a',
+      balanced:ladder.balanced!=null?+ladder.balanced.toFixed(2):'n/a',rich:ladder.rich!=null?+ladder.rich.toFixed(2):'n/a'});
+    this.render();
+    $('results').classList.add('visible');
+  },
+
+  render(){
+    this.renderFoods();
+    this.renderLedger();
+    if(!this.state.result)return;
+    this.renderPlan();
+    this.renderMicros();
+    this.renderShopping();
+    this.renderSensitivity();
+  },
+
+  renderPlan(){
+    const t=this.state.targets,r=this.state.result,tr=this.state.training,{totals,mealPlan,warnings}=r;
+    const mode=COST_MODES[r.modeKey]||COST_MODES.balanced;
+    const stat=(v,l)=>`<div class="stat"><div class="stat-value">${v}</div><div class="stat-label">${l}</div></div>`;
+    $('summary-grid').innerHTML=[
+      stat(t.calorieTarget,'Target kcal'),stat(t.proteinTarget+'g','Eff. protein target'),
+      stat(fmt$(r.cost),mode.obj==='cost'?'Daily cost':'Daily cost (quality mode)'),
+      stat('$'+Math.round(r.cost*30),'Monthly cost'),
+      stat(tr.totalLiftMin+'<span style="font-size:.6em">+'+tr.totalCardioMin+'</span>','Lift+cardio min/wk'),
+      stat(tr.cardioKcalWk.toLocaleString(),'Cardio kcal/wk'),
+      stat(t.fatTarget+'g','Fat target'),stat(t.carbTarget+'g','Carb target')
+    ].join('');
+    $('mode-ladder').innerHTML=`<span class="ladder-title">Budget modes</span>`+
+      Object.keys(COST_MODES).map(k=>{
+        const m=COST_MODES[k],cost=this.state.ladder?this.state.ladder[k]:null,on=k===r.modeKey;
+        return `<button class="ladder-chip${on?' on':''}" data-mode="${k}" ${on?'disabled':''}>${m.short}: ${cost==null?'n/a':'≈'+fmt$(cost)+'/day'}</button>`;
+      }).join('');
+    const names=MEAL_NAMES[mealPlan.length]||mealPlan.map((_,i)=>'Meal '+(i+1));
+    const times=MEAL_TIMES[mealPlan.length]||[];
+    $('meal-plan').innerHTML=mealPlan.map((m,i)=>`
+      <div class="meal">
+        <div class="meal-header">
+          <span class="meal-title">${times[i]?`<span class="meal-time">${times[i]}</span>`:''}${esc(names[i]||('Meal '+(i+1)))}</span>
+          <div class="meal-macros">
+            <span>${Math.round(m.kcal)} kcal</span>
+            <span>${Math.round(m.protein)}g P (${Math.round(m.effProtein)}g eff)</span>
+            <span>${Math.round(m.carb)}g C</span><span>${Math.round(m.fat)}g F</span>
+            <span>${fmt$(m.cost)}</span>
+          </div>
+        </div>
+        <div class="meal-body">${m.foods.map(f=>`
+          <div class="food-item" data-pos="${f.pos}">
+            <span class="food-name">${esc(FOODS[f.pos].name)}<button class="mini-btn" data-swap="${f.pos}" title="Substitute this food">swap</button></span>
+            <span class="food-serving">${f.servings.toFixed(2)}×${FOODS[f.pos].serving_g}g (${U.gToOz(f.servings*FOODS[f.pos].serving_g).toFixed(1)}oz)</span>
+            <span class="food-macros">P:${Math.round(FOODS[f.pos].protein*f.servings)} C:${Math.round(FOODS[f.pos].carb*f.servings)} F:${Math.round(FOODS[f.pos].fat*f.servings)}</span>
+            <span class="food-cost">${fmt$(FOODS[f.pos].price*f.servings)}</span>
+          </div>`).join('')}
+        </div>
+      </div>`).join('');
+    const tot=(v,l)=>`<div class="total-item"><div class="total-value">${v}</div><div class="total-label">${l}</div></div>`;
+    $('daily-totals').innerHTML=[
+      tot(Math.round(totals.kcal),'kcal'),tot(Math.round(totals.protein)+'g','Protein'),
+      tot(Math.round(totals.effProtein)+'g','Eff. protein'),tot(Math.round(totals.carb)+'g','Carbs'),
+      tot(Math.round(totals.fat)+'g','Fat'),tot(totals.fiber.toFixed(1)+'g','Fiber'),
+      tot(r.servings.filter(v=>v>=MealOptimizer.MIN_SERVE).length,'Foods used')
+    ].join('');
+    $('warn-box-holder').innerHTML=warnings&&warnings.length
+      ?`<div class="warn-box"><strong>Heads-up — plan is off-target:</strong><ul>${warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></div>`
+      :'';
+    const rx=tr;
+    $('train-holder').innerHTML=`
+      <div class="train-box">
+        <div class="train-title">Training Rx — per week (goal: ${esc(t.goalDesc.split(':')[0])})</div>
+        <div class="train-row"><span class="train-k">Lifting</span><span><b>${rx.liftS} × ${rx.liftMin} min</b> → <b>${rx.totalLiftMin} min/week</b></span></div>
+        <div class="train-sub">${esc(rx.split)} · 10–20 hard sets per muscle per week · add weight or reps every week.</div>
+        <div class="train-row"><span class="train-k">Cardio</span><span><b>${rx.cardioS} × ${rx.cardioMin} min</b>${rx.hiitS?` + <b>${rx.hiitS} × ${rx.hiitMin} min HIIT</b>`:''} → <b>${rx.totalCardioMin} min/week</b></span></div>
+        <div class="train-sub">${esc(rx.cardioType)} · burns ≈ <b>${rx.cardioKcalWk.toLocaleString()} kcal/week</b> (≈ ${Math.round(rx.cardioKcalWk/7)}/day).</div>
+        <div class="train-row"><span class="train-k">Steps</span><span><b>${rx.steps.toLocaleString()}/day</b>, every day</span></div>
+        <ul class="train-notes">${rx.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>
+      </div>`;
+    const fi=U.cmToFtIn(t.heightCm);
+    $('opt-details').innerHTML=`
+      <strong>Solver:</strong> ${r.solver==='lp'
+        ?`Two-phase Simplex LP (${r.iterations} pivots) → <span class="highlight">${r.objective==='cost'?'global cost optimum':'quality-optimum (price ignored)'}</span>`
+        :'<span class="warn-badge">GREEDY FALLBACK</span>'}
+      <strong>Mode:</strong> ${esc(mode.label)}<br>
+      <strong>Goal:</strong> ${esc(t.goalDesc)}<br>
+      <strong>You:</strong> ${fi.ft}'${fi.in}" / ${Math.round(U.kgToLbs(t.weightKg))} lb · est. BF ${Math.round(t.bodyFatPct)}% · LBM ${Math.round(U.kgToLbs(t.lbmKg))} lb · TDEE ${t.tdee} kcal<br>
+      <strong>P-ratio:</strong> ${t.pRatio.toFixed(2)} (${Math.round(t.pRatio*100)}% of weight change → muscle)<br>
+      <strong>Meal frequency:</strong> ${esc(mealFreqNote(this.state.specs,t))}<br>
+      <strong>Foods used:</strong> ${r.servings.filter(v=>v>=MealOptimizer.MIN_SERVE).length} · <strong>Excluded:</strong> ${this.state.excluded.size} · <strong>Pinned:</strong> ${this.state.pinned.size} (manage in the Foods tab)`;
+  },
+
+  renderMicros(){
+    const r=this.state.result,t=this.state.targets,holder=$('micro-holder');
+    if(!r||!t||!holder||!t.micro)return;
+    const mi=t.micro,tt=r.totals;
+    const f=v=>Math.round(v).toLocaleString();
+    const cell=(name,val,tgt,unit,cls)=>{
+      const color=cls==='ok'?'micro-ok':(cls==='low'?'micro-warn':'micro-bad');
+      return '<div class="micro-cell"><span class="micro-name">'+name+'</span>'+
+        '<span class="micro-val '+color+'">'+val+' <em>/ '+tgt+' '+unit+'</em></span></div>';
+    };
+    const cells=[
+      cell('Sodium',f(tt.sodium),'≤ '+f(mi.sodiumMax),'mg',tt.sodium<=mi.sodiumMax?'ok':'over'),
+      cell('Calcium',f(tt.calcium),'≥ '+f(mi.caMin),'mg',tt.calcium>=mi.caMin?'ok':'low'),
+      cell('Iron',tt.iron.toFixed(1),'≥ '+mi.feMin,'mg',tt.iron>=mi.feMin?'ok':'low'),
+      cell('Vitamin C',f(tt.vitc),'≥ '+f(mi.vcMin),'mg',tt.vitc>=mi.vcMin?'ok':'low'),
+      cell('Potassium · soft',f(tt.potassium),'~ '+f(mi.kMin),'mg',tt.potassium>=mi.kMin*0.7?'ok':'low'),
+      cell('Vitamin B12',tt.b12.toFixed(1),'≥ '+mi.b12Min,'µg',tt.b12>=mi.b12Min?'ok':'low')
+    ];
+    holder.innerHTML='<div class="micro-box">'+
+      '<div class="micro-title">Micronutrients — sex/age-adjusted targets · USDA-style estimates, guidance not lab precision</div>'+
+      '<div class="micro-grid">'+cells.join('')+'</div></div>';
+  },
+
+  renderFoods(){
+    const r=this.state.result;
+    $('food-table-body').innerHTML=FOODS.map((f,i)=>{
+      const used=r?(r.servings[i]||0):0;
+      const excl=this.state.excluded.has(f.key);
+      const pin=this.state.pinned.has(f.key);
+      return `<tr>
+        <td>${esc(f.name)}</td><td>${f.category}</td><td>${f.serving_g}</td>
+        <td>${f.kcal}</td><td>${f.protein}</td><td>${f.carb}</td><td>${f.fat}</td>
+        <td>${f.diaas}</td><td>${f.effectiveProtein.toFixed(1)}</td>
+        <td>${used>=MealOptimizer.MIN_SERVE?used.toFixed(2)+'×'+f.serving_g+'g':'—'}</td>
+        <td>${used>=MealOptimizer.MIN_SERVE?fmt$(f.price*used):'—'}</td>
+        <td>${fmt$(f.price)}${Math.abs(f.price-f.defaultPrice)>1e-9?'*':''}</td>
+        <td>
+          <button class="mini-btn" data-toggle="${f.key}">${excl?'off':'on'}</button>
+          ${excl?'':`<button class="mini-btn" data-pin="${f.key}">${pin?'pinned':'pin'}</button>`}
+        </td>
+      </tr>`;
+    }).join('');
+    $('excluded-note').textContent=this.state.excluded.size
+      ?`${this.state.excluded.size} food(s) excluded — they're never used until re-included. * = custom price.`
+      :'Tip: toggle any food [off] (e.g., tofu) and [pin] foods you want forced into the plan. * = custom price.';
+  },
+
+  renderShopping(){
+    const r=this.state.result;
+    if(!r){$('shop-list').innerHTML='<p class="note">Run a plan first.</p>';$('shop-links').innerHTML='';return;}
+    const items=[];
+    r.servings.forEach((v,i)=>{if(v>=MealOptimizer.MIN_SERVE)items.push({f:FOODS[i],serv:v});});
+    if(!items.length){$('shop-list').innerHTML='<p class="note">No foods in the current plan.</p>';$('shop-links').innerHTML='';return;}
+    const zip=this.state.zip;
+    $('shop-links').innerHTML=`
+      <div class="shop-actions" style="margin-top:1rem;">
+        <a class="btn secondary" target="_blank" rel="noopener" href="${Stores.locator('walmart',zip)}">Walmart ${zip?'near '+esc(zip):'near me'} →</a>
+        <a class="btn secondary" target="_blank" rel="noopener" href="${Stores.locator('kroger',zip)}">Kroger ${zip?'near '+esc(zip):'near me'} →</a>
+      </div>`;
+    $('shop-list').innerHTML=items.map(({f,serv})=>{
+      const g=Math.round(serv*f.serving_g);
+      return `<div class="shop-row">
+        <div>
+          <div class="shop-name">${esc(f.name)}</div>
+          <div class="shop-need">need ${serv.toFixed(2)}×${f.serving_g}g ≈ ${g}g (${U.gToOz(g).toFixed(1)}oz) — ${fmt$(f.price*serv)}/day</div>
+          <div class="shop-links">
+            <a target="_blank" rel="noopener" href="${Stores.walmart(f)}">Walmart →</a>
+            <a target="_blank" rel="noopener" href="${Stores.kroger(f)}">Kroger →</a>
+          </div>
+        </div>
+        <div class="shop-price">
+          <label for="price-${f.key}">$ per serving</label>
+          <input class="price-input" type="number" min="0.05" max="500" step="0.01" id="price-${f.key}" data-price="${f.key}" value="${f.price.toFixed(2)}">
+          <div class="price-hint">${Math.abs(f.price-f.defaultPrice)>1e-9?'default '+fmt$(f.defaultPrice):'est. average'}</div>
+          <div class="chips" data-cand="${f.key}"></div>
+        </div>
+      </div>`;
+    }).join('');
+  },
+
+  renderSensitivity(){
+    const r=this.state.result,el=$('sensitivity-content');
+    if(!r||!r.duals){
+      el.innerHTML='<p class="note">Shadow prices unavailable — the greedy fallback was used, so there are no true marginal costs to report.</p>';
+      return;
+    }
+    const L=r.dualLabels,D=r.duals;
+    const rows=L.map((l,i)=>({l,y:D[i]||0})).filter(x=>Math.abs(x.y)>1e-6)
+      .sort((a,b)=>Math.abs(b.y)-Math.abs(a.y)).slice(0,12);
+    const find=p=>{const i=L.findIndex(l=>l.startsWith(p));return i>=0?D[i]:null;};
+    const pF=find('Eff. protein floor'),kF=find('Calorie floor'),fibF=find('Fiber floor'),
+          vF=find('Group min: vegetables'),fF=find('Group min: fish'),sF=find('Sodium cap');
+    const qualityMode=r.objective==='quality';
+    const unit=qualityMode?' (quality units)':'/day';
+    const fx=v=>v!=null?fmt$(v)+unit:'n/a';
+    const bullet=(label,v)=>'<div>• '+label+' ≈ '+fx(v)+'</div>';
+    const unitNote=qualityMode
+      ?'<br><strong>Note:</strong> quality mode — duals are in quality-penalty units, not dollars.'
+      :'';
+    const cheap=FOODS.filter(f=>!this.state.excluded.has(f.key)&&f.effectiveProtein>0).slice(0,3)
+      .map(f=>'• '+esc(f.name)+' — $'+f.costPerEffProt.toFixed(3)+'/g effective protein').join('<br>');
+    el.innerHTML=
+      '<strong>Marginal effects at the optimum (LP duals)</strong>'+unitNote+'<br>'+
+      'Each value = objective change if that constraint moves by one unit.<br><br>'+
+      rows.map(x=>'<div>'+esc(x.l)+': '+(x.y>=0?'+':'')+x.y.toFixed(4)+'</div>').join('')+'<br>'+
+      '<strong>Plain English:</strong><br>'+
+      bullet('Requiring 10g more effective protein',pF!=null?pF*10:null)+
+      bullet('Dropping the calorie floor 100 kcal',kF!=null?kF*100:null)+
+      bullet('10g more required fiber',fibF!=null?fibF*10:null)+
+      bullet('One more serving of vegetables',vF)+
+      bullet('One more serving of fish',fF)+
+      bullet('Allowing 100mg more sodium (cost change)',sF!=null?-sF*100:null)+
+      '<br><br><strong>Cheapest effective protein right now (your prices):</strong><br>'+cheap;
+  },
+
+  switchTab(name){
+    document.querySelectorAll('.tab').forEach(t=>{
+      const on=t.dataset.tab===name;
+      t.classList.toggle('active',on);t.setAttribute('aria-selected',on);
+    });
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+name));
+  },
+
+  /* ---- swap / pin / exclude / prices ---- */
+  openSwap(btn){
+    const row=btn.closest('.food-item');if(!row)return;
+    const pos=+btn.dataset.swap;
+    const cands=Substitutions.candidatesFor(pos);
+    if(!cands.length){toast('No available substitutes (similar foods are excluded or already in the plan).');return;}
+    row.dataset.swapping=pos;
+    row.innerHTML=`
+      <div class="swap-panel">
+        <span style="font-size:.75rem;color:var(--muted)">Swap <strong>${esc(FOODS[pos].name)}</strong> for:</span>
+        <select class="swap-select">
+          ${cands.map(g=>`<option value="${g.id}">${esc(g.name)} — ${fmt$(g.price)}/serving${g.effectiveProtein>0?' ($'+g.costPerEffProt.toFixed(3)+'/g eff protein)':''}</option>`).join('')}
+        </select>
+        <button class="mini-btn" data-swap-ok>Swap</button>
+        <button class="mini-btn" data-swap-cancel>Cancel</button>
+      </div>`;
+  },
+  confirmSwap(row){
+    if(!row){this.render();return;}
+    const oldPos=+row.dataset.swapping;
+    const sel=row.querySelector('.swap-select');
+    if(!sel||sel.value===''){this.render();return;}
+    Substitutions.performSwap(oldPos,+sel.value);
+  },
+  toggleExcluded(key){
+    const f=FOODS.find(x=>x.key===key);if(!f)return;
+    if(this.state.excluded.has(key)){this.state.excluded.delete(key);toast(`${f.name} re-included.`);}
+    else{this.state.excluded.add(key);this.state.pinned.delete(key);toast(`${f.name} excluded — re-optimizing without it.`);}
+    persistExcluded();persistPinned();
+    this.rerun();
+  },
+  togglePin(key){
+    if(this.state.excluded.has(key)){toast('That food is excluded — re-include it first.');return;}
+    if(this.state.pinned.has(key)){this.state.pinned.delete(key);toast('Unpinned.');}
+    else{this.state.pinned.add(key);toast('Pinned — at least 1 serving/day will be kept in the plan.');}
+    persistPinned();
+    this.rerun();
+  },
+  resetExclusions(){this.state.excluded.clear();this.state.pinned.clear();persistExcluded();persistPinned();toast('All foods re-included.');this.rerun();},
+  resetPrices(){PriceManager.reset();toast('Prices reset to database defaults.');this.rerun();},
+  setPrice(key,val){
+    if(!Number.isFinite(val)||val<=0||val>500){toast('Enter a valid price per serving.');this.renderShopping();return;}
+    if(!PriceManager.set(key,val))return;
+    log(LogLevel.INFO,'Price updated',{food:key,price:val});
+    toast('Price saved — re-optimizing with your price.');
+    this.rerun();
+  },
+  applyChip(chip){
+    const key=chip.dataset.chip,val=parseFloat(chip.dataset.val);
+    const inp=document.querySelector(`[data-price="${key}"]`);
+    if(inp)inp.value=val;
+    this.setPrice(key,val);
+  },
+
+  /* ---- beta: best-effort live price fetch ---- */
+  async fetchPrices(){
+    const r=this.state.result;
+    if(!r){toast('Run a plan first.');return;}
+    const items=[];
+    r.servings.forEach((v,i)=>{if(v>=MealOptimizer.MIN_SERVE)items.push(FOODS[i]);});
+    if(!items.length){toast('No foods in plan.');return;}
+    const btn=$('fetch-prices');btn.disabled=true;
+    const status=$('fetch-status');
+    const list=items.slice(0,10);
+    let got=0;
+    status.textContent=`Attempting to fetch prices for ${list.length} item(s) through a public reader proxy — this is slow and often blocked…`;
+    for(const f of list){
+      const holder=document.querySelector(`[data-cand="${f.key}"]`);
+      if(holder)holder.innerHTML='<span class="price-hint">fetching…</span>';
+      try{
+        const cands=await this.tryFetchOne(f);
+        if(holder)holder.innerHTML=cands.length
+          ?cands.map(v=>`<button class="chip" data-chip="${f.key}" data-val="${v}">$${v.toFixed(2)}</button>`).join('')
+          :'<span class="price-hint">no readable prices — use the store links</span>';
+        if(cands.length)got++;
+      }catch(err){
+        if(holder)holder.innerHTML=`<span class="price-hint">fetch failed (${esc(err.message)}) — use the store links</span>`;
+      }
+      await new Promise(res=>setTimeout(res,350));
+    }
+    btn.disabled=false;
+    status.textContent=`Got price candidates for ${got}/${list.length} item(s). Click a candidate to apply it, or type the price you see at your store. (Retailers actively block automated access — the store links always work.)`;
+  },
+  async tryFetchOne(f){
+    const q=f.name.split('(')[0].trim();
+    const store=this.state.store==='kroger'?'kroger':'walmart';
+    const target=store==='kroger'
+      ?'https://www.kroger.com/search?query='+encodeURIComponent(q)
+      :'https://www.walmart.com/search?q='+encodeURIComponent(q);
+    const opts=(typeof AbortSignal!=='undefined'&&AbortSignal.timeout)?{signal:AbortSignal.timeout(25000)}:{};
+    const res=await fetch('https://r.jina.ai/'+target,opts);
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const text=await res.text();
+    const vals=[...text.matchAll(/\$\s?(\d{1,3}(?:,\d{3})?(?:\.\d{2})?)/g)]
+      .map(m=>parseFloat(m[1].replace(/,/g,'')))
+      .filter(v=>v>0.25&&v<400);
+    const uniq=[...new Set(vals)].sort((a,b)=>a-b);
+    const near=uniq.filter(v=>v>=f.price*0.25&&v<=f.price*5);
+    return (near.length?near:uniq).slice(0,6);
+  },
+
+  showWisdom(){
+    $('wisdom-text').textContent=
+`COSTMIN v6.2 — WISDOM NOTE
+===========================
+
+LAYOUT:
+Specs, Plan, Ledger, Scan, Foods, Shopping, Engine Log and
+Sensitivity are all tabs now -- Specs included. Fill out specs
+on its own tab, press Compute Optimal Plan, and you're taken
+straight to Plan. Every tab gets the full page width.
+
+PLANNING + TRACKING, ONE LOOP:
+Plan (LP optimizes cost/quality) → Ledger (log what you
+actually ate, by meal) → weight log → "Use latest in specs" →
+re-optimize. The tracker feeds the planner; the planner
+feeds the tracker.
+
+LEDGER DESIGN NOTES:
+- Entries snapshot macros & price per serving at add time
+  — editing the price book never rewrites your history.
+- Import plan foods in one click; already-logged foods are
+  skipped so re-import never double-counts. Each import lands
+  in the same meal bucket the optimizer planned it for.
+- The protein bar compares against the PLAN's actual
+  protein (not the DIAAS-adjusted target) — you track real
+  grams, the plan was optimized on effective grams.
+- Local dates, not UTC, so "today" survives timezones.
+
+SCAN TAB:
+- Barcode → nutrition, using the product's real serving size
+  (not a flat 100g): Open Food Facts' own per-serving values
+  when available, else its per-100g data scaled by the
+  product's serving_quantity.
+- A local FatSecret-backed proxy at localhost:5000 is tried
+  first if it's running; otherwise this calls Open Food Facts
+  directly — no server required for the common case.
+
+THE CORE INSIGHT (unchanged since v1): cheapest calories ≠
+cheapest effective nutrition. DIAAS-adjusted LP finds true
+cost-optimal protein blends; group minimums + micro rows
+keep the plan human; the Sensitivity duals price every
+rule so you know what variety and health actually cost.
+
+LEVERS: swap, pin, exclude, per-ZIP prices, budget chips,
+sodium allowance by sweat rate, custom ledger foods, barcode
+scan.`;
+    $('wisdom-modal').hidden=false;
+  },
+
+  /* ---------- self-tests ---------- */
+  runSelfTests(){
+    log(LogLevel.INFO,'Running self-tests…');
+    let pass=0,fail=0;
+    const t=(name,cond)=>{cond?pass++:fail++;log(cond?LogLevel.INFO:LogLevel.ERROR,`Self-test ${name}: ${cond?'PASS':'FAIL'}`);};
+    t('units: 6ft → 182.88cm',Math.abs(U.ftInToCm(6,0)-182.88)<0.01);
+    t('units: 210lb → 95.25kg',Math.abs(U.lbsToKg(210)-95.25)<0.01);
+    const specsBase={age:30,sex:'male',heightCm:180,weightKg:80,bodyfat:15,activity:'moderate',goal:'maintain',meals:3,proteinG:null};
+    const tg=MetabolicEngine.computeTargets(specsBase);
+    t('metabolic: TDEE 1500–4000',tg.tdee>1500&&tg.tdee<4000);
+    t('metabolic: protein 100–250g',tg.proteinTarget>100&&tg.proteinTarget<250);
+    t('metabolic: p-ratio 0.3–0.7',tg.pRatio>0.3&&tg.pRatio<0.7);
+    const tg2=MetabolicEngine.computeTargets({...specsBase,bodyfat:null,age:50,heightCm:183,weightKg:95.3});
+    t('metabolic: BF estimate sane 5–50%',tg2.bodyFatPct>=5&&tg2.bodyFatPct<=50);
+    t('metabolic: protein override 190 honored',MetabolicEngine.computeTargets({...specsBase,proteinG:190}).proteinTarget===190);
+    const S=new SimplexSolver();
+    const r1=S.solve([1,1],[{row:[1,1],b:10,type:'eq'}]);
+    t('LP: equality optimum = 10',r1.success&&Math.abs(r1.value-10)<1e-6);
+    const r2=S.solve([1,2],[{row:[1,1],b:10,type:'ge'}]);
+    t('LP: ≥ constraint optimum = 10 (uses x1)',r2.success&&Math.abs(r2.value-10)<1e-6&&Math.abs(r2.x[0]-10)<1e-6);
+    const r3=S.solve([-1,-1],[{row:[1,1],b:10,type:'le'}]);
+    t('LP: ≤ constraint optimum = −10',r3.success&&Math.abs(r3.value+10)<1e-6);
+    const r4=S.solve([1],[{row:[1],b:5,type:'ge'}]);
+    t('LP: dual of ≥ constraint = 1',r4.success&&Math.abs(r4.duals[0]-1)<1e-6);
+    const r5=S.solve([1,1],[{row:[1,0],b:2,type:'le'},{row:[1,0],b:5,type:'ge'}]);
+    t('LP: detects infeasible',!r5.success&&/infeas/i.test(r5.message));
+    const r6=S.solve([-1],[]);
+    t('LP: detects unbounded',!r6.success&&/unboun/i.test(r6.message));
+    t('DB: bananas present (variety engine)',FOODS.some(f=>/banana/i.test(f.name)));
+    t('DB: all foods valid incl. micros',FOODS.every(f=>f.kcal>0&&f.price>0&&f.diaas>=0&&f.diaas<=1.2&&f.maxDailyServings>=1
+      &&[f.sodium,f.calcium,f.iron,f.vitc,f.potassium,f.b12].every(v=>Number.isFinite(v)&&v>=0)));
+    const wh=FOODS.find(f=>f.name.includes('Bread')),eg=FOODS.find(f=>f.name.includes('Eggs'));
+    t('DIAAS: wheat protein discounted',wh.effectiveProtein<wh.protein);
+    t('DIAAS: egg protein boosted',eg.effectiveProtein>eg.protein);
+    const lpC=MealOptimizer.solveLP(tg,new Set(),new Set(),COST_MODES.cheap,1);
+    const lpB=MealOptimizer.solveLP(tg,new Set(),new Set(),COST_MODES.balanced,1);
+    const costOf=r=>FOODS.reduce((s,f,i)=>s+(r.x[i]||0)*f.price,0);
+    t('modes: cheap cost ≤ balanced cost',lpC.success&&lpB.success&&costOf(lpC)<=costOf(lpB)+0.01);
+    const rBal=MealOptimizer.optimize(tg,new Set(),new Set(),'balanced');
+    const vegSum=rBal.servings.reduce((s,v,i)=>s+((v>=MealOptimizer.MIN_SERVE&&groupOf(FOODS[i])==='veg')?v:0),0);
+    const fruitSum=rBal.servings.reduce((s,v,i)=>s+((v>=MealOptimizer.MIN_SERVE&&groupOf(FOODS[i])==='fruit')?v:0),0);
+    t('modes: balanced forces ≥3 veg servings',vegSum>=3-1e-6);
+    t('modes: balanced forces ≥2 fruit servings',fruitSum>=2-1e-6);
+    const rRich=MealOptimizer.optimize(tg,new Set(),new Set(),'rich');
+    const fishSum=rRich.servings.reduce((s,v,i)=>s+((v>=MealOptimizer.MIN_SERVE&&FOODS[i].category==='fish')?v:0),0);
+    t('modes: rich mode uses fish',fishSum>=2-1e-6);
+    t('micros: sodium cap respected (LP plan)',rBal.solver!=='lp'||rBal.totals.sodium<=tg.micro.sodiumMax+0.5);
+    t('micros: calcium floor met (LP plan)',rBal.solver!=='lp'||rBal.totals.calcium>=tg.micro.caMin-1);
+    t('micros: iron floor met (LP plan)',rBal.solver!=='lp'||rBal.totals.iron>=tg.micro.feMin-0.5);
+    t('micros: vitamin C floor met (LP plan)',rBal.solver!=='lp'||rBal.totals.vitc>=tg.micro.vcMin-1);
+    t('micros: B12 floor met (LP plan)',rBal.solver!=='lp'||rBal.totals.b12>=tg.micro.b12Min-0.05);
+    t('micros: female 45y iron target 18mg',MetabolicEngine.computeTargets({...specsBase,sex:'female',age:45}).micro.feMin===18);
+    t('micros: male 30y iron target 8mg',tg.micro.feMin===8);
+    const sumK=rBal.mealPlan.reduce((s,m)=>s+m.kcal,0);
+    t('meals: macros conserved across meals',Math.abs(sumK-rBal.totals.kcal)<5);
+    t('meals: every meal is fed',rBal.mealPlan.every(m=>m.foods.length>0));
+    t('meals: full pipeline sane',rBal.success&&rBal.totals.kcal>500&&rBal.cost>0&&rBal.cost<50);
+    const tr=TrainingEngine.compute({...specsBase,goal:'recomp'},tg);
+    t('training: 120–600 min/week',tr.totalMin>=120&&tr.totalMin<=600);
+    t('training: cardio burns >250 kcal/wk',tr.cardioKcalWk>250);
+    /* v4.0: ledger */
+    t('ledger: local date key format',/^\d{4}-\d{2}-\d{2}$/.test(localDayKey(new Date())));
+    t('ledger: day key uses local (not UTC) date',localDayKey(new Date(2025,0,15))==='2025-01-15');
+    const lt=entriesTotals([
+      {id:'a',name:'x',servings:2,per:{kcal:100,p:10,c:5,f:3,sodium:50,cost:0.5}},
+      {id:'b',name:'y',servings:0.5,per:{kcal:200,p:20,c:10,f:6,sodium:100,cost:1}}
+    ]);
+    t('ledger: totals math',Math.abs(lt.kcal-300)<1e-9&&Math.abs(lt.p-30)<1e-9&&Math.abs(lt.sodium-150)<1e-9&&Math.abs(lt.cost-1.5)<1e-9);
+    t('ledger: empty entries → zeros',entriesTotals([]).kcal===0&&entriesTotals(null).kcal===0);
+    /* v6.0: persistent My Foods + water + barcode resilience */
+    t('water: default daily goal is 96 oz',WaterStore.goal()===96);
+    t('water: missing date returns zero',WaterStore.get('1900-01-01')===0);
+    t('my foods: store always returns an array',Array.isArray(MyFoodStore.load()));
+    t('scan: UPC/EAN barcode normalization',normalizeBarcode('034000470693')==='0034000470693');
+     t('scan: Reader JSON parser accepts direct product payload',Scanner.parseReaderPayload({product:{product_name:'test'}}).product.product_name==='test');
+     t('scan: Reader JSON parser accepts JSON envelope content',Scanner.parseReaderPayload({content:'{\"product\":{\"product_name\":\"test\"}}'}).product.product_name==='test');
+
+    /* v5.0: wider food database */
+    t('food db: at least 150 items (was 47 in v4.0)',FOODS.length>=150);
+    t('food db: every item still valid (macros, DIAAS, micros, price)',FOODS.every(f=>
+      f.kcal>0&&f.price>0&&f.diaas>=0&&f.diaas<=1.2&&f.maxDailyServings>=1&&CAT_CAPS.hasOwnProperty(f.category)
+      &&[f.sodium,f.calcium,f.iron,f.vitc,f.potassium,f.b12].every(v=>Number.isFinite(v)&&v>=0)));
+    t('food db: no duplicate keys across the whole table',new Set(FOODS.map(f=>f.key)).size===FOODS.length);
+    t('food db: covers all 14 categories with real items',
+      Object.keys(CAT_CAPS).every(cat=>FOODS.some(f=>f.category===cat)));
+    t('food db: high-B12 outlier present (liver) so the B12 floor stays easy to hit',
+      FOODS.some(f=>f.b12>=20));
+    t('food db: a deliberately low-DIAAS item exists (collagen) for the quality lesson',
+      FOODS.some(f=>f.diaas<0.2&&f.protein>0));
+
+    /* v5.0: ledger meal buckets */
+    t('ledger: plan meal names map to the 4 fixed buckets',
+      ledgerBucketForMealName('Breakfast')==='breakfast'&&ledgerBucketForMealName('Lunch')==='lunch'&&
+      ledgerBucketForMealName('Dinner')==='dinner'&&ledgerBucketForMealName('Brunch')==='snacks'&&
+      ledgerBucketForMealName('Snack')==='snacks'&&ledgerBucketForMealName('Evening snack')==='snacks'&&
+      ledgerBucketForMealName('Your one big meal')==='snacks');
+    const geByMeal=groupEntriesByMeal([
+      {id:'a',meal:'breakfast',per:{kcal:1},servings:1},
+      {id:'b',meal:'lunch',per:{kcal:1},servings:1},
+      {id:'c',per:{kcal:1},servings:1} /* no meal field at all — legacy entry */
+    ]);
+    t('ledger: groupEntriesByMeal sorts into the right buckets',
+      geByMeal.breakfast.length===1&&geByMeal.lunch.length===1&&geByMeal.dinner.length===0);
+    t('ledger: legacy entries with no meal field default to snacks (no migration needed)',
+      geByMeal.snacks.length===1&&geByMeal.snacks[0].id==='c');
+    t('ledger: groupEntriesByMeal never drops an entry',
+      geByMeal.breakfast.length+geByMeal.lunch.length+geByMeal.dinner.length+geByMeal.snacks.length===3);
+
+    /* v5.0: barcode scan uses the product's real serving size, not a flat 100g
+       (mirrors the companion Flask backend's resolution order exactly) */
+    const offWithServingFields=parseOffProduct({
+      product_name:'Nutella',brands:'Ferrero',serving_size:'15 g',serving_quantity:'15',
+      nutriments:{'energy-kcal_100g':539,'proteins_100g':6.3,'carbohydrates_100g':57.5,'fat_100g':30.9,'fiber_100g':3.4,
+        'energy-kcal_serving':80.9,'proteins_serving':0.9,'carbohydrates_serving':8.6,'fat_serving':4.6,'fiber_serving':0.5}
+    },'3017620422003');
+    t('scan: uses OFF per-serving fields when present, not per-100g',
+      offWithServingFields.grams===15&&offWithServingFields.kcal===81&&offWithServingFields.serving==='15 g');
+    const offScaledFromQty=parseOffProduct({
+      product_name:'Protein Bar',serving_size:'60 g',serving_quantity:'60',
+      nutriments:{'energy-kcal_100g':400,'proteins_100g':30,'carbohydrates_100g':35,'fat_100g':12,'fiber_100g':5}
+    },'1234567890123');
+    t('scan: scales per-100g data by serving_quantity when no _serving fields exist',
+      offScaledFromQty.grams===60&&offScaledFromQty.kcal===240&&Math.abs(offScaledFromQty.protein-18)<0.01);
+    const offNoServingInfo=parseOffProduct({
+      product_name:'Bulk Rice',
+      nutriments:{'energy-kcal_100g':130,'proteins_100g':2.7,'carbohydrates_100g':28,'fat_100g':0.3,'fiber_100g':0.4}
+    },'9999999999999');
+    t('scan: only falls back to 100g when the product truly has no serving size on file',
+      offNoServingInfo.grams===100&&offNoServingInfo.kcal===130&&offNoServingInfo.servingBasis.indexOf('no serving size')>=0);
+
+    log(LogLevel.INFO,`Self-tests complete — ${pass} passed, ${fail} failed${fail?' (see Log tab)':''}`);
+  }
+};
+
+document.addEventListener('DOMContentLoaded',()=>App.init());
+window.CostMinApp=App;window.FOODS=FOODS;window.COST_MODES=COST_MODES;window.MetabolicEngine=MetabolicEngine;
+window.TrainingEngine=TrainingEngine;window.MealOptimizer=MealOptimizer;window.SimplexSolver=SimplexSolver;
+window.Substitutions=Substitutions;window.LogStore=LogStore;window.entriesTotals=entriesTotals;
+</script>
+</body>
+</html>
