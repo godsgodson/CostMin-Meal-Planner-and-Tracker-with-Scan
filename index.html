@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CostMin v6.3 — tabbed layout + persistent foods + water + resilient scan</title>
+<title>CostMin v6.4 — realistic meal plans + repeat-day ledger</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -193,16 +193,29 @@
   .myfood-actions input{width:82px;padding:.35rem .45rem;font-size:.72rem;}
   .myfood-actions label{display:inline-flex;align-items:center;gap:.3rem;text-transform:none;letter-spacing:0;font-size:.68rem;color:var(--muted);margin:0;}
   .myfood-actions input[type=checkbox]{width:auto;}
+  .copy-box{margin:0 0 1rem;padding:1rem;border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;background:var(--bg);}
+  .copy-controls{display:flex;gap:.65rem;flex-wrap:wrap;align-items:flex-end;}
+  .copy-controls label{display:flex;flex-direction:column;min-width:145px;flex:0 1 auto;text-transform:none;letter-spacing:0;font-size:.68rem;color:var(--muted);margin:0;}
+  .copy-controls .date-input,.copy-controls select{margin-top:.25rem;min-width:145px;width:auto;padding:.5rem .6rem;font-size:.78rem;}
+  .copy-controls .btn{margin:0;white-space:nowrap;}
+  .meal-fit-note{margin:.75rem 0 0;padding:.7rem .8rem;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-size:.72rem;}
+  .meal-fit-note strong{color:var(--fg);}
   @media(max-width:760px){
     .myfood-row{grid-template-columns:1fr;}
     .myfood-actions{justify-content:flex-start;}
+    .copy-controls{display:grid;grid-template-columns:1fr 1fr;}
+    .copy-controls label{min-width:0;}
+    .copy-controls .btn{width:100%;}
+  }
+  @media(max-width:520px){
+    .copy-controls{grid-template-columns:1fr;}
   }
 </style>
 </head>
 <body>
 <div class="container">
   <header>
-    <h1>CostMin <span>Meal Planner</span> v6.3</h1>
+    <h1>CostMin <span>Meal Planner</span> v6.4</h1>
     <p class="subtitle">LP cost optimization · budget modes · micros · training Rx · daily ledger by meal · barcode scan · weight log · ft/in · lb · editable prices</p>
   </header>
 
@@ -342,6 +355,29 @@
           <button class="btn secondary" id="log-import">Import plan foods</button>
           <button class="btn secondary" id="log-clear">Clear day</button>
         </div>
+
+        <div class="copy-box">
+          <div class="mini-h" style="margin-top:0;">Repeat foods — copy from any past day</div>
+          <div class="copy-controls">
+            <label>Copy from
+              <input type="date" id="log-copy-source" class="date-input">
+            </label>
+            <label>Meal
+              <select id="log-copy-meal">
+                <option value="all" selected>Whole day</option>
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch">Lunch</option>
+                <option value="dinner">Dinner</option>
+                <option value="snacks">Snacks</option>
+              </select>
+            </label>
+            <button class="btn secondary" id="log-copy-btn">Add copied foods → this day</button>
+            <button class="btn secondary" id="log-copy-yesterday-breakfast">Yesterday's breakfast</button>
+            <button class="btn secondary" id="log-copy-yesterday-day">Yesterday's whole day</button>
+          </div>
+          <p class="note">The current Ledger date is the destination. Copied foods are added to what is already there; matching foods in the same meal are merged instead of duplicated. Water is not copied.</p>
+        </div>
+
         <div id="log-bars"></div>
 
         <div class="water-box">
@@ -542,7 +578,7 @@
     </section>
 
   <footer class="footer">
-    CostMin v6.3 — two-phase simplex LP · DIAAS protein · budget modes · micronutrient guardrails · training Rx · daily ledger by meal · water log · persistent My Foods · barcode scan · weight log<br>
+    CostMin v6.4 — two-phase simplex LP · realistic meal assembly · budget modes · micronutrient guardrails · daily ledger by meal · repeat-day foods · water log · persistent My Foods · barcode scan · weight log<br>
     Prices &amp; nutrient values are editable/USDA-style estimates, not live scraped data. <a href="#" id="wisdom-link">View Wisdom Note</a>
   </footer>
 </div>
@@ -616,6 +652,26 @@
    4. Self-test suite extended further (see the "v5.0" block).
    ============================================================ */
 
+/* ============================================================
+   v6.4 CHANGE LOG — REALISTIC MEALS + REPEAT-DAY LEDGER
+   1. Ledger can copy foods from any past date into the currently
+      selected destination date:
+      - Whole day or a single meal can be copied.
+      - One-click "Yesterday's breakfast" and "Yesterday's whole day".
+      - Matching food + meal entries merge servings instead of duplicating.
+      - Food history is copied; water is intentionally not copied.
+   2. Meal planning now distinguishes a real meal food from a raw
+      pantry/cooking ingredient:
+      - Flour, cooking oils/shortening, table sugars, syrups, jams/jellies
+        and similar pantry-only items remain available for Ledger/Shopping
+        but are not eligible as stand-alone LP meal foods.
+   3. Meal assembly is profile-aware:
+      - Breakfast favors eggs/dairy/oats/fruit/nuts.
+      - Lunch/dinner favor a main protein + vegetable + starch/fruit.
+      - Snacks favor dairy/fruit/nuts/seeds/supplements.
+      - Protein anchors are spread deliberately instead of simply poured
+        into whichever meal has the largest remaining deficit.
+   ============================================================ */
 /* ============================================================
    v6.0 CHANGE LOG — PERSISTENT FOODS + WATER + RESILIENT SCAN
    1. My Foods persists in localStorage:
@@ -1149,10 +1205,35 @@ const FOOD_DATABASE=[
 ];
 const CAT_CAPS={meat:6,fish:6,egg:8,dairy:6,supplement:5,legume:5,soy:6,nut:5,seed:5,grain:8,tuber:6,oil:6,veg:8,fruit:5,sweetener:6};
 
+/* ---------- v6.4: meal-realism rules ---------- */
+/* These foods are still valid for shopping and Ledger logging, but they are
+   not valid as stand-alone foods in the optimizer. A meal planner should not
+   decide that a bowl of flour, oil, sugar or shortening is a "meal". */
+const PANTRY_ONLY_PATTERNS=[
+  /whole wheat flour/i,
+  /all-purpose flour/i,
+  /vegetable shortening/i,
+  /granulated white sugar/i,
+  /brown sugar/i,
+  /powdered sugar/i,
+  /maple syrup/i,
+  /agave nectar/i,
+  /corn syrup/i,
+  /molasses/i,
+  /strawberry jam/i,
+  /grape jelly/i
+];
+function mealEligibleName(name,category){
+  if(category==='oil'||category==='sweetener')return false;
+  if(/^(butter|ghee|lard|bacon grease)/i.test(String(name).trim()))return false;
+  return !PANTRY_ONLY_PATTERNS.some(re=>re.test(name));
+}
+
 const FOODS=FOOD_DATABASE.map(([name,serving_g,kcal,protein,carb,fat,fiber,price,diaas,store,category,
     sodium,calcium,iron,vitc,potassium,b12])=>({
   name,serving_g,kcal,protein,carb,fat,fiber,defaultPrice:price,price,diaas,store,category,
   sodium,calcium,iron,vitc,potassium,b12,
+  mealEligible:mealEligibleName(name,category),
   key:name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''),
   effectiveProtein:protein*diaas,
   maxDailyServings:CAT_CAPS[category]||6,
@@ -1366,7 +1447,7 @@ const MealOptimizer={
 
   buildProblem(targets,mode,excluded,pinned,capMult){
     const n=FOODS.length;
-    const isAllowed=FOODS.map(f=>!excluded.has(f.key));
+    const isAllowed=FOODS.map(f=>!excluded.has(f.key)&&f.mealEligible!==false);
     const kcal=FOODS.map(f=>f.kcal),prot=FOODS.map(f=>f.effectiveProtein),
           fat=FOODS.map(f=>f.fat),carb=FOODS.map(f=>f.carb),fib=FOODS.map(f=>f.fiber);
     const cons=[
@@ -1444,7 +1525,7 @@ const MealOptimizer={
 
   optimize(targets,excluded,pinned,modeKey){
     const mode=COST_MODES[modeKey];
-    const isAllowed=FOODS.map(f=>!excluded.has(f.key));
+    const isAllowed=FOODS.map(f=>!excluded.has(f.key)&&f.mealEligible!==false);
     if(!isAllowed.some(Boolean))toast('All foods are excluded — reset exclusions in the Foods tab.');
     for(const capMult of [1,2,4]){
       const {cons,c,caps}=this.buildProblem(targets,mode,excluded,pinned,capMult);
@@ -1554,77 +1635,302 @@ const MealOptimizer={
     return {count,msgs};
   },
 
+
   assembleMeals(s,nMeals){
     const items=[];
     s.forEach((v,i)=>{if(v>=this.MIN_SERVE)items.push({pos:i,rem:v});});
     const tot=this.computeTotals(s);
-    const meals=Array.from({length:nMeals},()=>({foods:[],kcal:0,protein:0,effProtein:0,carb:0,fat:0,fiber:0,cost:0}));
-    const kTarget=tot.kcal/nMeals,pTarget=tot.effProtein/nMeals;
+    const names=MEAL_NAMES[nMeals]||Array.from({length:nMeals},(_,i)=>'Meal '+(i+1));
+    const meals=Array.from({length:nMeals},()=>({
+      foods:[],kcal:0,protein:0,effProtein:0,carb:0,fat:0,fiber:0,cost:0
+    }));
+
+    const roleOf=f=>{
+      const c=f.category;
+      if(c==='meat'||c==='fish'||c==='egg')return 'main';
+      if(c==='legume'||c==='soy')return 'plant';
+      if(c==='dairy')return 'dairy';
+      if(c==='supplement')return 'supplement';
+      if(c==='veg')return 'veg';
+      if(c==='fruit')return 'fruit';
+      if(c==='grain'||c==='tuber')return 'starch';
+      if(c==='nut'||c==='seed')return 'fat';
+      return 'other';
+    };
+
+    const mealProfile=name=>{
+      const n=String(name||'').toLowerCase();
+      if(/snack/.test(n)||/evening snack/.test(n)){
+        return {main:.3,plant:.7,dairy:2.8,supplement:2.2,veg:.4,fruit:3.2,starch:1.2,fat:2.4,other:.5};
+      }
+      if(/breakfast|brunch/.test(n)){
+        return {main:2.0,plant:1.2,dairy:2.8,supplement:1.5,veg:.9,fruit:4.5,starch:3.0,fat:2.0,other:.4};
+      }
+      /* Lunch/dinner: put the real meal architecture here. */
+      return {main:4.0,plant:2.8,dairy:1.0,supplement:.7,veg:3.2,fruit:1.1,starch:3.0,fat:1.4,other:.4};
+    };
+
+    const mainRank=f=>{
+      const c=f.category;
+      if(c==='fish')return 5.0;
+      if(c==='meat')return 4.9;
+      if(c==='egg')return 4.6;
+      if(c==='legume')return 4.0;
+      if(c==='soy')return 3.6;
+      if(c==='dairy')return 2.0;
+      if(c==='supplement')return 1.4;
+      if(c==='nut'||c==='seed')return 1.0;
+      return 0;
+    };
+
+    const mainMealFit=(f,name)=>{
+      const n=String(name||'').toLowerCase(),c=f.category;
+      if(/breakfast|brunch/.test(n)){
+        if(c==='egg')return 5.0;
+        if(c==='dairy')return 3.3;
+        if(c==='meat')return 1.8;
+        if(c==='legume'||c==='soy')return 1.4;
+        if(c==='fish')return .7;
+        if(c==='supplement')return 1.7;
+      }
+      if(/snack/.test(n)){
+        if(c==='dairy')return 4.0;
+        if(c==='supplement')return 3.8;
+        if(c==='legume'||c==='soy')return 1.8;
+        if(c==='egg')return 1.5;
+        if(c==='meat'||c==='fish')return .4;
+      }
+      if(/lunch|dinner/.test(n)){
+        if(c==='meat'||c==='fish')return 5.0;
+        if(c==='legume'||c==='soy')return 3.2;
+        if(c==='egg')return 1.8;
+        if(c==='dairy')return 1.2;
+        if(c==='supplement')return .3;
+      }
+      return 1;
+    };
+
+    const mealFoodCap=f=>{
+      const c=f.category;
+      if(c==='dairy')return 1.0;                 /* cheese/milk/yogurt are sides, not the whole plate */
+      if(c==='nut'||c==='seed')return 1.0;
+      if(c==='supplement')return 1.0;
+      if(c==='egg')return 3.0;                   /* 3 × 50g eggs is a normal breakfast anchor */
+      if(c==='fish'||c==='meat')return 2.0;
+      if(c==='legume'||c==='soy')return 1.5;
+      if(c==='grain'||c==='tuber')return 2.0;
+      if(c==='fruit'||c==='veg')return 2.5;
+      return 1.5;
+    };
+
     const pour=(mi,pos,amt)=>{
+      if(amt<=1e-9)return;
       const f=FOODS[pos],m=meals[mi];
       const ex=m.foods.find(g=>g.pos===pos);
-      if(ex)ex.servings+=amt;else m.foods.push({pos,servings:amt});
-      m.kcal+=f.kcal*amt;m.protein+=f.protein*amt;m.effProtein+=f.effectiveProtein*amt;
-      m.carb+=f.carb*amt;m.fat+=f.fat*amt;m.fiber+=f.fiber*amt;m.cost+=f.price*amt;
+      if(ex)ex.servings+=amt;
+      else m.foods.push({pos,servings:amt});
+      m.kcal+=f.kcal*amt;
+      m.protein+=f.protein*amt;
+      m.effProtein+=f.effectiveProtein*amt;
+      m.carb+=f.carb*amt;
+      m.fat+=f.fat*amt;
+      m.fiber+=f.fiber*amt;
+      m.cost+=f.price*amt;
     };
-    const dP=i=>pTarget-meals[i].effProtein,dK=i=>kTarget-meals[i].kcal;
-    const anchors=items.filter(it=>FOODS[it.pos].effectiveProtein>=6)
-      .sort((a,b)=>(FOODS[b.pos].effectiveProtein*b.rem)-(FOODS[a.pos].effectiveProtein*a.rem));
-    const sides=items.filter(it=>FOODS[it.pos].effectiveProtein<6)
-      .sort((a,b)=>(FOODS[b.pos].kcal*b.rem)-(FOODS[a.pos].kcal*a.rem));
-    for(const it of anchors){
-      if(it.rem<this.MIN_SERVE)continue;
-      let m=-1,best=-1e18;
-      for(let i=0;i<nMeals;i++){
-        if(meals[i].foods.some(g=>g.pos===it.pos))continue;
-        const sc=dP(i)+(meals[i].foods.length===0?1000:0);
-        if(sc>best){best=sc;m=i;}
-      }
-      if(m<0){m=0;for(let i=1;i<nMeals;i++)if(dP(i)>dP(m))m=i;}
-      const amt=Math.min(1,it.rem);
-      pour(m,it.pos,amt);it.rem-=amt;
-    }
-    let guard=0;
-    while(guard++<5000){
-      const it=anchors.find(x=>x.rem>=this.MIN_SERVE);
-      if(!it)break;
-      let m=0;
-      for(let i=1;i<nMeals;i++){
-        const a=dP(i),b=dP(m);
-        if(a>b+1e-9||(Math.abs(a-b)<=1e-9&&!meals[i].foods.some(g=>g.pos===it.pos)&&meals[m].foods.some(g=>g.pos===it.pos)))m=i;
-      }
-      const amt=Math.min(1,it.rem);
-      pour(m,it.pos,amt);it.rem-=amt;
-    }
-    guard=0;
-    while(guard++<5000){
-      const it=sides.find(x=>x.rem>=this.MIN_SERVE);
-      if(!it)break;
-      let m=0;
-      for(let i=1;i<nMeals;i++){
-        const a=dK(i),b=dK(m);
-        if(a>b+1e-9||(Math.abs(a-b)<=1e-9&&!meals[i].foods.some(g=>g.pos===it.pos)&&meals[m].foods.some(g=>g.pos===it.pos)))m=i;
-      }
-      const amt=Math.min(1,it.rem);
-      pour(m,it.pos,amt);it.rem-=amt;
-    }
-    for(const it of items){
-      if(it.rem>1e-9){
-        let m=0;for(let i=1;i<nMeals;i++)if(dK(i)>dK(m))m=i;
-        pour(m,it.pos,it.rem);it.rem=0;
-      }
-    }
-    meals.forEach(m=>{
-      m.kcal=0;m.protein=0;m.effProtein=0;m.carb=0;m.fat=0;m.fiber=0;m.cost=0;
-      m.foods.forEach(g=>{
-        const f=FOODS[g.pos];
-        m.kcal+=f.kcal*g.servings;m.protein+=f.protein*g.servings;
-        m.effProtein+=f.effectiveProtein*g.servings;m.carb+=f.carb*g.servings;
-        m.fat+=f.fat*g.servings;m.fiber+=f.fiber*g.servings;m.cost+=f.price*g.servings;
+
+    const kTarget=tot.kcal/Math.max(1,nMeals);
+    const pTarget=tot.effProtein/Math.max(1,nMeals);
+
+    /* First give each real meal a main protein anchor. */
+    const anchors=items
+      .filter(it=>mainRank(FOODS[it.pos])>0&&FOODS[it.pos].effectiveProtein>0)
+      .sort((a,b)=>{
+        const fb=FOODS[b.pos],fa=FOODS[a.pos];
+        return (mainRank(fb)*fb.effectiveProtein*b.rem)-(mainRank(fa)*fa.effectiveProtein*a.rem);
       });
-    });
+
+    const usedAnchor=new Set();
+    for(let mi=0;mi<nMeals;mi++){
+      const profile=mealProfile(names[mi]);
+      let best=null,bestScore=-Infinity;
+      for(const it of anchors){
+        if(usedAnchor.has(it.pos)||it.rem<this.MIN_SERVE)continue;
+        const f=FOODS[it.pos];
+        const fit=profile.main*mainMealFit(f,names[mi]);
+        const protDensity=Math.min(3,f.effectiveProtein);
+        const score=fit+mainRank(f)*.75+protDensity*.9+Math.max(0,1-meals[mi].kcal/Math.max(1,kTarget))*2;
+        if(score>bestScore){bestScore=score;best=it;}
+      }
+      if(best){
+        const f=FOODS[best.pos];
+        const targetShare=/snack/i.test(names[mi]) ? 0.38 : 0.62;
+        let amt=f.effectiveProtein>0?(pTarget*targetShare/f.effectiveProtein):0;
+        amt=Math.max(this.STEP,Math.min(best.rem,amt,mealFoodCap(f)));
+        amt=Math.round(amt/this.STEP)*this.STEP;
+        if(amt< this.MIN_SERVE)amt=Math.min(best.rem,this.STEP);
+        pour(mi,best.pos,amt);
+        best.rem=Math.max(0,best.rem-amt);
+        usedAnchor.add(best.pos);
+      }
+    }
+
+    /* Keep a food together whenever practical. The old allocator sprinkled
+       0.25 servings of the same food into every meal, which produced cards
+       like "tuna + cheese + rice + cabbage + fruit" three times in a row.
+       A real meal should own most of a food quantity; split only when a
+       serving would make the meal materially oversized. */
+    const foodMeals=new Map();
+    for(let mi=0;mi<nMeals;mi++){
+      meals[mi].foods.forEach(g=>{
+        if(!foodMeals.has(g.pos))foodMeals.set(g.pos,new Set());
+        foodMeals.get(g.pos).add(mi);
+      });
+    }
+
+    for(const it of items){
+      let guard=0;
+      while(it.rem>=this.MIN_SERVE&&guard++<20){
+        const f=FOODS[it.pos],role=roleOf(f),assigned=foodMeals.get(it.pos);
+        let bestMi=0,bestScore=-Infinity;
+        for(let mi=0;mi<nMeals;mi++){
+          const m=meals[mi],profile=mealProfile(names[mi]);
+          const kGap=Math.max(0,1-m.kcal/Math.max(1,kTarget));
+          const pGap=Math.max(0,1-m.effProtein/Math.max(1,pTarget));
+          const hasCat=m.foods.some(g=>roleOf(FOODS[g.pos])===role);
+          const foodEntry=m.foods.find(g=>g.pos===it.pos);
+          const currentFoodServ=foodEntry?foodEntry.servings:0;
+          const hasFood=currentFoodServ>0;
+          const isAssigned=assigned&&assigned.has(mi);
+          const capLeft=Math.max(0,mealFoodCap(f)-currentFoodServ);
+          let score=pGap*4+kGap*2+profile[role]*2.2;
+          if(capLeft<=1e-9)score-=80; /* this meal already has its sensible amount */
+          if(isAssigned)score+=7.0; /* keep the same food together */
+          else if(assigned&&assigned.size>=2)score-=6.0;
+          if(hasCat&&!hasFood)score-=0.55;
+          if(hasFood)score+=2.0;
+          if(/snack/i.test(names[mi])&&(role==='main'||role==='veg'))score-=3.0;
+          if(/breakfast|brunch/i.test(String(names[mi]).toLowerCase())&&role==='fruit')score+=1.5;
+          if(/dinner/i.test(String(names[mi]).toLowerCase())&&role==='fruit')score-=1.0;
+          if(m.kcal>kTarget*1.25)score-=7*(m.kcal/kTarget-1.25);
+          if(!hasCat&&!hasFood)score+=.8; /* build a complete plate */
+          if(score>bestScore){bestScore=score;bestMi=mi;}
+        }
+
+        const m=meals[bestMi];
+        const existing=m.foods.some(g=>g.pos===it.pos);
+        const room=Math.max(0,kTarget*1.28-m.kcal);
+        let amt;
+        const perMealCap=mealFoodCap(f);
+        const foodEntry=m.foods.find(g=>g.pos===it.pos);
+        const currentFoodServ=foodEntry?foodEntry.servings:0;
+        const capLeft=Math.max(0,perMealCap-currentFoodServ);
+        if(capLeft>=this.MIN_SERVE){
+          amt=Math.min(it.rem,capLeft);
+          if(!existing&&room>0){
+            const roomS=Math.floor((room/Math.max(1,f.kcal))/this.STEP)*this.STEP;
+            if(roomS>=this.MIN_SERVE)amt=Math.min(amt,roomS);
+          }
+        }else{
+          amt=0;
+        }
+        if(amt<=0){
+          /* Pick the best meal that still has room for this food. */
+          let alt=-1,bestAlt=-Infinity;
+          for(let mi=0;mi<nMeals;mi++){
+            const mm=meals[mi],pp=mealProfile(names[mi]);
+            const ee=mm.foods.find(g=>g.pos===it.pos);
+            const used=ee?ee.servings:0;
+            const left=Math.max(0,perMealCap-used);
+            if(left<this.MIN_SERVE)continue;
+            const sScore=Math.max(0,1-mm.kcal/Math.max(1,kTarget))*2+
+              Math.max(0,1-mm.effProtein/Math.max(1,pTarget))*3+
+              pp[role]*2+(assigned&&assigned.has(mi)?5:0)-
+              (mm.kcal>kTarget*1.28?5:0);
+            if(sScore>bestAlt){bestAlt=sScore;alt=mi;}
+          }
+          if(alt>=0){
+            bestMi=alt;
+            amt=Math.min(it.rem,perMealCap-(meals[bestMi].foods.find(g=>g.pos===it.pos)?.servings||0));
+            amt=Math.round(amt/this.STEP)*this.STEP;
+          }
+        }
+        amt=Math.round(amt/this.STEP)*this.STEP;
+        if(amt<this.MIN_SERVE)amt=Math.min(it.rem,this.STEP);
+        pour(bestMi,it.pos,amt);
+        if(!foodMeals.has(it.pos))foodMeals.set(it.pos,new Set());
+        foodMeals.get(it.pos).add(bestMi);
+        it.rem=Math.max(0,it.rem-amt);
+      }
+    }
+
+    const recalcMeal=m=>{
+      m.kcal=0;m.protein=0;m.effProtein=0;m.carb=0;m.fat=0;m.fiber=0;m.cost=0;
+      m.foods=m.foods.filter(g=>g.servings>=this.MIN_SERVE);
+      m.foods.forEach(g=>{
+        g.servings=Math.round(g.servings/this.STEP)*this.STEP;
+        const f=FOODS[g.pos];
+        m.kcal+=f.kcal*g.servings;
+        m.protein+=f.protein*g.servings;
+        m.effProtein+=f.effectiveProtein*g.servings;
+        m.carb+=f.carb*g.servings;
+        m.fat+=f.fat*g.servings;
+        m.fiber+=f.fiber*g.servings;
+        m.cost+=f.price*g.servings;
+      });
+    };
+
+    /* Final cleanup + balance pass. Do not reshuffle main proteins; move
+       practical side foods instead so the plate stays recognizable while
+       meal calories land in a sensible neighborhood of the daily average. */
+    meals.forEach(recalcMeal);
+    for(let pass=0;pass<80;pass++){
+      let hi=0,lo=0;
+      for(let i=1;i<nMeals;i++){
+        if(meals[i].kcal>meals[hi].kcal)hi=i;
+        if(meals[i].kcal<meals[lo].kcal)lo=i;
+      }
+      if(hi===lo)break;
+      if(meals[hi].kcal<=kTarget*1.15 || meals[lo].kcal>=kTarget*.85)break;
+
+      const lowName=names[lo],highName=names[hi];
+      const lowProfile=mealProfile(lowName),highProfile=mealProfile(highName);
+      const candidates=meals[hi].foods
+        .filter(g=>g.servings>=this.STEP&&roleOf(FOODS[g.pos])!=='main')
+        .map(g=>{
+          const f=FOODS[g.pos],role=roleOf(f);
+          const lowExisting=meals[lo].foods.find(x=>x.pos===g.pos);
+          const lowUsed=lowExisting?lowExisting.servings:0;
+          const capLeft=Math.max(0,mealFoodCap(f)-lowUsed);
+          if(capLeft<this.STEP)return null;
+          const fit=lowProfile[role]*2-highProfile[role]*.3+
+            (lowExisting?1.5:0);
+          const move=Math.min(g.servings,capLeft,1.0);
+          if(move<this.STEP)return null;
+          return {g,f,role,fit,move};
+        })
+        .filter(Boolean)
+        .sort((a,b)=>b.fit-a.fit);
+
+      if(!candidates.length)break;
+      const pick=candidates[0];
+      const amt=Math.round(Math.min(pick.move,
+        Math.max(this.STEP,(meals[hi].kcal-meals[lo].kcal)/(2*Math.max(1,pick.f.kcal))))/this.STEP)*this.STEP;
+      const moveAmt=Math.min(pick.g.servings,amt,mealFoodCap(pick.f)-
+        (meals[lo].foods.find(x=>x.pos===pick.g.pos)?.servings||0));
+      if(moveAmt<this.STEP)break;
+
+      pick.g.servings=Math.round((pick.g.servings-moveAmt)*1000)/1000;
+      const dest=meals[lo].foods.find(x=>x.pos===pick.g.pos);
+      if(dest)dest.servings=Math.round((dest.servings+moveAmt)*1000)/1000;
+      else meals[lo].foods.push({pos:pick.g.pos,servings:moveAmt});
+      recalcMeal(meals[hi]);
+      recalcMeal(meals[lo]);
+    }
+
+    meals.forEach(recalcMeal);
     return meals;
   },
+
 
   greedyFallback(targets,isAllowed,pinned,mode){
     const n=FOODS.length,s=new Array(n).fill(0);
@@ -2230,7 +2536,7 @@ function myFoodToFood(x){
     defaultPrice:x.price,price:x.price,diaas:x.diaas,store:'My Foods',category:'custom',
     sodium:x.sodium,calcium:x.calcium,iron:x.iron,vitc:x.vitc,potassium:x.potassium,b12:x.b12,
     key:x.key,isMyFood:true,myFoodId:x.id,source:x.source,brand:x.brand,barcode:x.barcode,
-    effectiveProtein:x.protein*x.diaas,maxDailyServings:6,
+    mealEligible:true,effectiveProtein:x.protein*x.diaas,maxDailyServings:6,
     get costPerEffProt(){return this.effectiveProtein>0?this.price/this.effectiveProtein:Infinity;}
   };
 }
@@ -2308,6 +2614,7 @@ const App={
     this.renderMyFoods();
     if(!this.state.logDate)this.state.logDate=localDayKey(new Date());
     if($('log-date'))$('log-date').value=this.state.logDate;
+    if($('log-copy-source'))$('log-copy-source').value=this.dateOffset(this.state.logDate,-1);
     if($('water-goal'))$('water-goal').value=WaterStore.goal();
     this.populateLedgerFoods();
     this.renderLedger();
@@ -2369,11 +2676,21 @@ const App={
   bindLedgerEvents(){
     $('log-date').addEventListener('change',()=>{
       this.state.logDate=$('log-date').value||localDayKey(new Date());
+      if($('log-copy-source'))$('log-copy-source').value=this.dateOffset(this.state.logDate,-1);
       this.renderLedger();
     });
     $('log-prev').addEventListener('click',()=>this.shiftDay(-1));
     $('log-next').addEventListener('click',()=>this.shiftDay(1));
     $('log-import').addEventListener('click',()=>this.importPlanToLedger());
+    if($('log-copy-btn'))$('log-copy-btn').addEventListener('click',()=>{
+      this.copyFoodsToCurrent($('log-copy-source').value, $('log-copy-meal').value);
+    });
+    if($('log-copy-yesterday-breakfast'))$('log-copy-yesterday-breakfast').addEventListener('click',()=>{
+      this.copyFoodsToCurrent(this.dateOffset(this.state.logDate,-1),'breakfast');
+    });
+    if($('log-copy-yesterday-day'))$('log-copy-yesterday-day').addEventListener('click',()=>{
+      this.copyFoodsToCurrent(this.dateOffset(this.state.logDate,-1),'all');
+    });
     $('log-clear').addEventListener('click',()=>{
       this.saveLedgerEntries([]);
       toast('Day cleared.');
@@ -2574,6 +2891,49 @@ const App={
   },
   newEntryId(){return 'e'+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);},
 
+  dateOffset(dateKey,n){
+    const d=new Date((dateKey||localDayKey(new Date()))+'T12:00:00');
+    if(Number.isNaN(d.getTime()))return localDayKey(new Date());
+    d.setDate(d.getDate()+n);
+    return localDayKey(d);
+  },
+
+  copyFoodsToCurrent(sourceDate,mealFilter){
+    const targetDate=this.state.logDate||localDayKey(new Date());
+    const source=String(sourceDate||'').trim()||this.dateOffset(targetDate,-1);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(source)){toast('Pick a valid source date.');return;}
+    if(source===targetDate){toast('Source and destination are the same day. Pick an earlier day.');return;}
+    const all=LogStore.load();
+    const sourceEntries=Array.isArray(all[source])?all[source]:[];
+    const normalizedMeal=e=>(e&&['breakfast','lunch','dinner','snacks'].includes(e.meal))?e.meal:'snacks';
+    const picked=sourceEntries.filter(e=>mealFilter==='all'||normalizedMeal(e)===mealFilter);
+    if(!picked.length){
+      toast('Nothing to copy from '+source+(mealFilter==='all'?'':(' ('+mealFilter+')'))+'.');
+      return;
+    }
+
+    const dest=this.ledgerEntries().map(e=>({...e,per:{...(e.per||{})}}));
+    let added=0,merged=0;
+    picked.forEach(e=>{
+      const meal=normalizedMeal(e);
+      const key=e.foodKey||('name:'+String(e.name||'').trim().toLowerCase());
+      const ex=dest.find(x=>(x.foodKey||('name:'+String(x.name||'').trim().toLowerCase()))===key&&normalizedMeal(x)===meal);
+      const serv=Math.max(MealOptimizer.MIN_SERVE,parseFloat(e.servings)||0);
+      if(!serv)return;
+      if(ex){
+        ex.servings=Math.round(((parseFloat(ex.servings)||0)+serv)*4)/4;
+        merged++;
+      }else{
+        dest.push({...e,id:this.newEntryId(),meal,servings:Math.round(serv*4)/4,per:{...(e.per||{})}});
+        added++;
+      }
+    });
+    this.saveLedgerEntries(dest);
+    const mealText=mealFilter==='all'?'whole day':mealFilter;
+    toast('Added '+mealText+' from '+source+' → '+targetDate+' ('+added+' new, '+merged+' merged).');
+    this.renderLedger();
+  },
+
   shiftDay(n){
     const base=this.state.logDate||localDayKey(new Date());
     const d=new Date(base+'T12:00:00');
@@ -2581,6 +2941,7 @@ const App={
     d.setDate(d.getDate()+n);
     this.state.logDate=localDayKey(d);
     $('log-date').value=this.state.logDate;
+    if($('log-copy-source'))$('log-copy-source').value=this.dateOffset(this.state.logDate,-1);
     this.renderLedger();
   },
 
@@ -2953,7 +3314,8 @@ const App={
             <span class="food-cost">${fmt$(FOODS[f.pos].price*f.servings)}</span>
           </div>`).join('')}
         </div>
-      </div>`).join('');
+      </div>`).join('')+
+      `<div class="meal-fit-note"><strong>Meal logic:</strong> the planner now builds meals around real protein anchors and pairs them with produce and practical starches. Raw pantry/cooking ingredients such as flour, oils and table sugars remain usable in the Ledger and Shopping tabs but cannot be selected as stand-alone meal foods.</div>`;
     const tot=(v,l)=>`<div class="total-item"><div class="total-value">${v}</div><div class="total-label">${l}</div></div>`;
     $('daily-totals').innerHTML=[
       tot(Math.round(totals.kcal),'kcal'),tot(Math.round(totals.protein)+'g','Protein'),
@@ -3025,14 +3387,15 @@ const App={
         <td>${used>=MealOptimizer.MIN_SERVE?fmt$(f.price*used):'—'}</td>
         <td>${fmt$(f.price)}${Math.abs(f.price-f.defaultPrice)>1e-9?'*':''}</td>
         <td>
+          ${f.mealEligible===false?'<span class="note" title="Available for Ledger and Shopping, but excluded from stand-alone meal planning.">ledger-only</span>':''}
           <button class="mini-btn" data-toggle="${f.key}">${excl?'off':'on'}</button>
-          ${excl?'':`<button class="mini-btn" data-pin="${f.key}">${pin?'pinned':'pin'}</button>`}
+          ${excl?'':(f.mealEligible===false?'':`<button class="mini-btn" data-pin="${f.key}">${pin?'pinned':'pin'}</button>`)}
         </td>
       </tr>`;
     }).join('');
     $('excluded-note').textContent=this.state.excluded.size
-      ?`${this.state.excluded.size} food(s) excluded — they're never used until re-included. * = custom price.`
-      :'Tip: toggle any food [off] (e.g., tofu) and [pin] foods you want forced into the plan. * = custom price.';
+      ?`${this.state.excluded.size} food(s) excluded — they're never used until re-included. Ledger-only pantry ingredients are never stand-alone plan foods. * = custom price.`
+      :'Tip: toggle any food [off] (e.g., tofu) and [pin] foods you want forced into the plan. Flour/oils/sugars and similar pantry ingredients stay available for Ledger/Shopping but are ledger-only.';
   },
 
   renderShopping(){
@@ -3316,6 +3679,8 @@ scan.`;
     t('micros: male 30y iron target 8mg',tg.micro.feMin===8);
     const sumK=rBal.mealPlan.reduce((s,m)=>s+m.kcal,0);
     t('meals: macros conserved across meals',Math.abs(sumK-rBal.totals.kcal)<5);
+    t('meal realism: flour/oil/sugar are never optimized as stand-alone foods',
+      rBal.servings.every((v,i)=>v<MealOptimizer.MIN_SERVE||FOODS[i].mealEligible!==false));
     t('meals: every meal is fed',rBal.mealPlan.every(m=>m.foods.length>0));
     t('meals: full pipeline sane',rBal.success&&rBal.totals.kcal>500&&rBal.cost>0&&rBal.cost<50);
     const tr=TrainingEngine.compute({...specsBase,goal:'recomp'},tg);
@@ -3341,7 +3706,7 @@ scan.`;
     /* v5.0: wider food database */
     t('food db: at least 150 items (was 47 in v4.0)',FOODS.length>=150);
     t('food db: every item still valid (macros, DIAAS, micros, price)',FOODS.every(f=>
-      f.kcal>0&&f.price>0&&f.diaas>=0&&f.diaas<=1.2&&f.maxDailyServings>=1&&CAT_CAPS.hasOwnProperty(f.category)
+      f.kcal>0&&f.price>0&&f.diaas>=0&&f.diaas<=1.2&&f.maxDailyServings>=1&&(f.isMyFood||CAT_CAPS.hasOwnProperty(f.category))
       &&[f.sodium,f.calcium,f.iron,f.vitc,f.potassium,f.b12].every(v=>Number.isFinite(v)&&v>=0)));
     t('food db: no duplicate keys across the whole table',new Set(FOODS.map(f=>f.key)).size===FOODS.length);
     t('food db: covers all 14 categories with real items',
